@@ -1,0 +1,83 @@
+experiment: gta5_to_cityscapes
+seed: 1
+device: cuda
+output_dir: outputs/gta5_to_cityscapes
+
+model:
+  backbone: resnet101
+  num_classes: 19
+  freeze_bn: true
+  imagenet_weights: pretrain/resnet101-5d3b4d8f.pth
+
+data:
+  source:
+    images: /datasets/GTA5/images
+    masks: /datasets/GTA5/labels
+    label_format: cityscapes_raw
+  target_train:
+    images: /datasets/Cityscapes/leftImg8bit/train
+  target_val:
+    images: /datasets/Cityscapes/leftImg8bit/val
+    masks: /datasets/Cityscapes/gtFine/val
+    label_format: cityscapes_raw
+    image_suffix: _leftImg8bit.png
+    mask_suffix: _gtFine_labelIds.png
+  full_size: [1536, 768]
+  crop_size: [1024, 512]
+  scale_range: [0.75, 1.25]
+  horizontal_flip_probability: 0.5
+  strong_augmentation:
+    brightness: 0.5
+    contrast: 0.5
+    saturation: 0.5
+    hue: 0.2
+    gaussian_blur_probability: 0.5
+    gaussian_blur_radius: [0.1, 2.0]
+    cutout_probability: 0.5
+  num_workers: 8
+
+source_train:
+  iterations: 20000
+  batch_size: 4
+  base_lr: 0.00025
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_power: 0.9
+  checkpoint_every: 500
+
+adapt:
+  stage1_iterations: 25000
+  stage2_iterations: 5000
+  batch_size: 4
+  base_lr: 0.00025
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_power: 0.9
+  checkpoint_every: 500
+  ema_momentum: 0.99
+  ema_update_every: 12
+  ua_statistics_momentum: 0.99
+  temporal_floor: 0.5
+  temporal_confidence_momentum: 0.95
+  class_prior_momentum: 0.9
+  class_balance_gamma: 0.25
+  class_balance_clip: [0.7, 1.3]
+
+uwrg:
+  enabled: false
+  floor: 0.8
+  exponent: 0.0
+  strength: 0.35
+  warmup_ratio: 0.20
+  attenuation_coefficients: [1.10, 0.52, 0.26]
+  ambient_color: [0.07, 0.38, 0.50]
+  depth_vertical_weight: 0.70
+  attenuation_jitter: [0.85, 1.15]
+  ambient_jitter: [0.90, 1.10]
+  aggregation: segment
+  segment_stride: 4
+  min_segment_pixels: 8
+
+evaluation:
+  input_size: [1536, 768]
+  batch_size: 1

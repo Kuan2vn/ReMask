@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime artifacts (the repository intentionally contains code only).
+/data/
+/datasets/
+/pretrain/
+/pretrained/
+/checkpoints/
+/outputs/
+/results/
+/logs/
+/wandb/
+*.pth
+*.pt
+*.ckpt

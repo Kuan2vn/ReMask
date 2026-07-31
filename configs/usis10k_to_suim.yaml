@@ -1,0 +1,81 @@
+experiment: usis10k_to_suim
+seed: 1
+device: cuda
+output_dir: outputs/usis10k_to_suim
+
+model:
+  backbone: resnet101
+  num_classes: 8
+  freeze_bn: true
+  imagenet_weights: pretrain/resnet101-5d3b4d8f.pth
+
+data:
+  source:
+    images: /datasets/USIS10K/train/images
+    masks: /datasets/USIS10K/train/masks
+    label_format: common
+  target_train:
+    images: /datasets/SUIM/train_val/images
+  target_val:
+    images: /datasets/SUIM/TEST/images
+    masks: /datasets/SUIM/TEST/masks
+    label_format: suim_rgb
+  full_size: [1280, 640]
+  crop_size: [960, 480]
+  scale_range: [0.75, 1.25]
+  horizontal_flip_probability: 0.5
+  strong_augmentation:
+    brightness: 0.5
+    contrast: 0.5
+    saturation: 0.5
+    hue: 0.2
+    gaussian_blur_probability: 0.5
+    gaussian_blur_radius: [0.1, 2.0]
+    cutout_probability: 0.5
+  num_workers: 8
+
+source_train:
+  iterations: 30000
+  batch_size: 4
+  base_lr: 0.00025
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_power: 0.9
+  checkpoint_every: 500
+
+adapt:
+  stage1_iterations: 25000
+  stage2_iterations: 5000
+  batch_size: 4
+  base_lr: 0.00025
+  momentum: 0.9
+  weight_decay: 0.0005
+  lr_power: 0.9
+  checkpoint_every: 500
+  ema_momentum: 0.99
+  ema_update_every: 12
+  ua_statistics_momentum: 0.99
+  temporal_floor: 0.5
+  temporal_confidence_momentum: 0.95
+  class_prior_momentum: 0.9
+  class_balance_gamma: 0.25
+  class_balance_clip: [0.7, 1.3]
+
+uwrg:
+  enabled: true
+  floor: 0.8
+  exponent: 1.50
+  strength: 0.35
+  warmup_ratio: 0.20
+  attenuation_coefficients: [1.10, 0.52, 0.26]
+  ambient_color: [0.07, 0.38, 0.50]
+  depth_vertical_weight: 0.70
+  attenuation_jitter: [0.85, 1.15]
+  ambient_jitter: [0.90, 1.10]
+  aggregation: segment
+  segment_stride: 4
+  min_segment_pixels: 8
+
+evaluation:
+  input_size: [1280, 640]
+  batch_size: 1
