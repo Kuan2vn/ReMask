@@ -40,7 +40,7 @@ Public semantic dataset repositories already on Hugging Face:
 - [UIIS semantic masks](https://huggingface.co/datasets/kuan2/UIIS-semantic)
 - [USIS10K semantic masks](https://huggingface.co/datasets/kuan2/USIS10K-semantic)
 
-Download with the Hugging Face CLI (install it with `python -m pip install -U huggingface_hub` if needed):
+Download with the Hugging Face CLI included in `requirements.txt`:
 
 ```bash
 hf download kuan2/UIIS-semantic --repo-type dataset --local-dir data/UIIS
@@ -61,7 +61,7 @@ The training config uses target training images only; target validation masks ar
 
 ### GTA5 → Cityscapes
 
-GTA5 raw game-derived images and Cityscapes are not mirrored in this repository. Obtain them through their authorized sources and comply with their terms. Cityscapes requires an account and its terms prohibit redistribution; do not use the private Cityscapes backup as a public download mirror. GTA5 shards must be extracted locally to image and label folders.
+GTA5 raw game-derived images and Cityscapes are not mirrored in this repository. Obtain them through their authorized sources and comply with their terms. Cityscapes requires an account and its [terms prohibit redistribution](https://www.cityscapes-dataset.com/license/); do not use the private Cityscapes backup as a public download mirror. GTA5 is game-derived; use the [original dataset page](https://download.visinf.tu-darmstadt.de/data/from_games/) and do not publicly mirror its files without explicit redistribution permission. GTA5 shards must be extracted locally to image and label folders.
 
 Expected paths for `configs/gta5_to_cityscapes.yaml`:
 
