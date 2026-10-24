@@ -20,7 +20,7 @@ python -m pip install -e .
 python -c 'import torch; print(torch.__version__, torch.cuda.is_available())'
 ```
 
-On Windows PowerShell, activate with `.venv\\Scripts\\Activate.ps1`. The code also needs a CUDA-compatible PyTorch build for GPU training. The optional `pycocotools` dependency is only needed for label preparation utilities.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. The code also needs a CUDA-compatible PyTorch build for GPU training. The optional `pycocotools` dependency is only needed for label preparation utilities.
 
 Download the ImageNet ResNet-101 initialization file to `pretrain/resnet101-5d3b4d8f.pth` (or edit `model.imagenet_weights` in your YAML):
 
