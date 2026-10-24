@@ -4,6 +4,10 @@ Official PyTorch implementation of **ReMask** for source-free domain adaptive se
 
 ReMask adapts a source-trained model using only unlabeled target images. The released training recipe uses uncertainty-aware reliability in Stage 1, followed by temporal and class-balanced refinement in Stage 2. For underwater adaptation, an underwater reliability gate further suppresses unstable pseudo-labels. All reliability modules are used only during adaptation and add no inference-time parameters.
 
+## Supervisor handoff and ablations
+
+See [HANDOFF.md](HANDOFF.md) for asset locations, direct HPC-to-Hugging-Face upload, environment setup, checkpoint preflight and controlled ablation commands. `requirements.txt` is included; `requirements-handoff.txt` adds the HF client. New private uploads are pending until their completion manifest is verified.
+
 ## Requirements
 
 The dependency versions follow the original SND codebase:

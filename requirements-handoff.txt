@@ -1,0 +1,3 @@
+# Install the matching torch/torchvision CUDA build first; see HANDOFF.md.
+-r requirements.txt
+huggingface_hub>=0.34,<2
