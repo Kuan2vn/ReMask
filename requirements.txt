@@ -1,4 +1,4 @@
-# Reference implementation. Install PyTorch/torchvision for your CUDA runtime first.
+# Install a CUDA-compatible torch/torchvision pair for your system first.
 torch>=1.10.1
 torchvision>=0.11.2
 numpy>=1.21
@@ -6,4 +6,7 @@ Pillow>=8.3
 PyYAML>=5.4
 scipy>=1.7
 tqdm>=4.62
+
+# Optional dataset preparation and Hugging Face downloads.
 pycocotools>=2.0.6
+huggingface-hub>=0.34,<2
