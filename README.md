@@ -77,21 +77,35 @@ The config expects Cityscapes-style label IDs. Set each `data.*` path to the fol
 
 ### Source checkpoints
 
-The source-model files from the HPC inventory have not yet been published to a public Hugging Face checkpoint repository. Do not treat the private `kuan2/cityscape` or `kuan2/remask_underwater` backups as public downloads. To train a source model from labeled data:
+Three source-initialization checkpoints are now public in [kuan2/remask-checkpoints](https://huggingface.co/kuan2/remask-checkpoints). Download the full release:
+
+```bash
+hf download kuan2/remask-checkpoints --repo-type model --local-dir pretrain/checkpoints
+```
+
+| Experiment | Checkpoint path | Iteration | Classes |
+|---|---|---:|---:|
+| UIIS → SUIM | `pretrain/checkpoints/uiis_to_suim/source_iter_18000.pth` | 18,000 | 8 |
+| USIS10K → SUIM | `pretrain/checkpoints/usis10k_to_suim/source_iter_29000.pth` | 29,000 | 8 |
+| GTA5 → Cityscapes | `pretrain/checkpoints/gta5_to_cityscapes/source_iter_20000.pth` | 20,000 | 19 |
+
+The original UIIS/USIS10K filenames say `iter020000`, but their checkpoint metadata gives the actual iterations in this table. These files are source models for adaptation, not final target-adapted ReMask outputs. No final target checkpoint has been published yet. The release README lists SHA-256 values.
+
+To train a new source model from labeled data:
 
 ```bash
 python train_source.py --config configs/gta5_to_cityscapes.yaml
 ```
 
-For source-free adaptation, supply an authorized source checkpoint:
+For source-free GTA5 → Cityscapes adaptation, use the released source checkpoint:
 
 ```bash
 python train_remask.py \
   --config configs/gta5_to_cityscapes.yaml \
-  --source-checkpoint pretrain/GTA5_source.pth
+  --source-checkpoint pretrain/checkpoints/gta5_to_cityscapes/source_iter_20000.pth
 ```
 
-The source checkpoint path above is an example; put the file you obtained in `pretrain/` and pass its actual path. Available configs are `configs/gta5_to_cityscapes.yaml`, `configs/uiis_to_suim.yaml`, and `configs/usis10k_to_suim.yaml`.
+Available configs are `configs/gta5_to_cityscapes.yaml`, `configs/uiis_to_suim.yaml`, and `configs/usis10k_to_suim.yaml`.
 
 ## Train and evaluate
 
