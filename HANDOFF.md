@@ -10,7 +10,7 @@ This GitHub repository is the compact reference implementation. It has not been 
 - No source or adaptation checkpoints have been published to a public HF model repo.
 - Cityscapes terms prohibit dataset redistribution. Keep the raw set and private backup private; download it through the official portal.
 - GTA5 is game-derived. Its [original download page](https://download.visinf.tu-darmstadt.de/data/from_games/) does not establish an explicit right to sublicense/mirror. Do not publicly upload the raw shards without permission.
-- HPC SSH worked through a proxy in a prior session. In this session the SOCKS endpoint is closed, so no HPC-to-HF transfer occurred.
+- HPC SSH worked through a proxy in a prior session. In the current session, the localhost SOCKS listener responded, but requests to 10.20.8.11:22 were rejected with SOCKS reply 5 (connection refused); SSH stopped before key exchange/authentication, so no HPC-to-HF transfer occurred.
 
 ## HPC inventory
 
