@@ -6,6 +6,7 @@ from pathlib import Path
 
 SOURCE_REPO = 'kuan2/remask-checkpoints'
 SOURCE_REVISION = 'b0a4659412c9fb959a04bfe0619e0462bf40b943'
+CHECKPOINT_DIR = Path(__file__).resolve().parents[3] / 'pretrain/checkpoints'
 SOURCES = {
     'uiis_to_suim': dict(filename='uiis_to_suim/source_iter_18000.pth', iteration=18000,
         sha256='7f9e88a4029f4797f97ade53f25cfef7c31ae528f52c9459b7c40b08cc67a747'),
@@ -35,6 +36,8 @@ def source_checkpoint(protocol, assets, override=None):
     record = SOURCES[protocol]
     if override:
         path = override
+    elif (CHECKPOINT_DIR / record['filename']).is_file():
+        path = CHECKPOINT_DIR / record['filename']
     else:
         from huggingface_hub import hf_hub_download
         path = hf_hub_download(SOURCE_REPO, record['filename'], revision=SOURCE_REVISION,

@@ -64,6 +64,24 @@ class PortableLauncher(unittest.TestCase):
                 self.assertEqual(download.call_args.kwargs['revision'], SOURCE_REVISION)
                 self.assertIs(download.call_args.kwargs['token'], False)
 
+    def test_downloaded_local_checkpoint_is_reused_and_corruption_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            checkpoint = root / 'fixture/source.pth'
+            checkpoint.parent.mkdir()
+            checkpoint.write_bytes(b'verified checkpoint')
+            expected = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
+            with mock.patch('underwater_baselines.assets.CHECKPOINT_DIR', root), \
+                mock.patch.dict('underwater_baselines.assets.SOURCES',
+                    {'fixture': dict(filename='fixture/source.pth', iteration=1, sha256=expected)}), \
+                mock.patch('huggingface_hub.hf_hub_download') as download:
+                record = source_checkpoint('fixture', root / 'cache')
+                self.assertEqual(Path(record['path']), checkpoint.resolve())
+                checkpoint.write_bytes(b'corrupted checkpoint')
+                with self.assertRaises(ValueError):
+                    source_checkpoint('fixture', root / 'cache')
+                download.assert_not_called()
+
     @unittest.skipUnless(os.name == 'posix', 'Linux native loader')
     def test_native_catalog_loads_unlabeled_train_and_labeled_eval_from_runtime_view(self):
         with tempfile.TemporaryDirectory(prefix='native loader ') as folder:

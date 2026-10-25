@@ -31,6 +31,19 @@ hf download kuan2/USIS10K-semantic --repo-type dataset --local-dir data/USIS10K
 
 Configure source paths and mask encoding as described in [data notes](HANDOFF.md). Adaptation from the released source checkpoints needs only SUIM.
 
+## Checkpoints
+
+Download all released [source checkpoints](https://huggingface.co/kuan2/remask-checkpoints) directly into the expected directory:
+
+```bash
+hf download kuan2/remask-checkpoints --revision b0a4659412c9fb959a04bfe0619e0462bf40b943 \
+  --local-dir pretrain/checkpoints
+```
+
+The files are placed at `pretrain/checkpoints/<protocol>/source_iter_<iteration>.pth`: UIIS→SUIM at 18k, USIS10K→SUIM at 29k and GTA5→Cityscapes at 20k. The underwater launcher finds and SHA256-verifies these files automatically; no manual moving or checkpoint arguments are needed. Missing underwater source files are downloaded automatically.
+
+SeCoV2 also downloads official SAM ViT-B weights automatically to `assets/baselines/sam_vit_b_01ec64.pth`. These releases contain source initialization weights; final adapted ReMask checkpoints are not included.
+
 ## Underwater baselines
 
 Run Stable-ST, SeCoV2 and DAPASS sequentially for both UIIS→SUIM and USIS10K→SUIM:
@@ -46,7 +59,7 @@ python baselines/run.py --method stable_st --protocol uiis_to_suim --data data/S
 ```
 
 Methods: `stable_st`, `secov2`, `dapass`. Protocols: `uiis_to_suim`, `usis10k_to_suim`.
-Source checkpoints are downloaded automatically from [Hugging Face](https://huggingface.co/kuan2/remask-checkpoints); SeCoV2 also downloads official SAM ViT-B weights. Downloads are revision/hash checked and cached in `assets/baselines`. No ImageNet download or source images are needed for these adaptation runs.
+No ImageNet download or source images are needed for these adaptation runs.
 
 Validate setup and source loading on CPU, or run a short GPU correctness check:
 
@@ -61,10 +74,9 @@ Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port; 
 
 ## ReMask reference
 
-Set dataset paths in `configs/uiis_to_suim.yaml`, `configs/usis10k_to_suim.yaml` or `configs/gta5_to_cityscapes.yaml`. Source weights are public:
+Set dataset paths in `configs/uiis_to_suim.yaml`, `configs/usis10k_to_suim.yaml` or `configs/gta5_to_cityscapes.yaml`, then use the source checkpoint downloaded above:
 
 ```bash
-hf download kuan2/remask-checkpoints --local-dir pretrain/checkpoints
 python train_remask.py --config configs/uiis_to_suim.yaml \
   --source-checkpoint pretrain/checkpoints/uiis_to_suim/source_iter_18000.pth \
   --set model.imagenet_weights=null
