@@ -1,0 +1,16 @@
+{
+  "upstream": "https://github.com/DZhaoXd/Stable-ST",
+  "commit": "c447da35598b285eb8868caf4f969aaba1bf39b8",
+  "implementation": "Pinned author train_stable_st.py and NFD evaluator with project underwater dataset/model compatibility",
+  "changes": [
+    "8 classes; 1525 unlabeled target / 110 evaluation images",
+    "No target train masks mounted; dummy 255 labels for candidate diagnostics",
+    "Author class-balanced image resampling retained using predicted CTR_O.p banks",
+    "Full view1280x640; crop960x480; candidate cache640x320",
+    "Missing-class/quantile bounds guards",
+    "Bound donor retries when a rare class has no sufficiently large mask",
+    "Skip redundant ImageNet init before strict complete source-state loading",
+    "One-based500-update checkpoint/eval cadence and full-state session pause"
+  ],
+  "file_hashes": "../PROVENANCE.json (canonical LF hashes for retained files)"
+}

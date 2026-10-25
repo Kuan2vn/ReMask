@@ -20,3 +20,6 @@ venv/
 *.pth
 *.pt
 *.ckpt
+/assets/
+/baselines/underwater/tmp/
+/baselines/underwater/stable_st/data/

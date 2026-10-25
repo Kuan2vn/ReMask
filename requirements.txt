@@ -1,12 +1,19 @@
-# Install a CUDA-compatible torch/torchvision pair for your system first.
-torch>=1.10.1
-torchvision>=0.11.2
-numpy>=1.21
-Pillow>=8.3
-PyYAML>=5.4
-scipy>=1.7
-tqdm>=4.62
-
-# Optional dataset preparation and Hugging Face downloads.
-pycocotools>=2.0.6
-huggingface-hub>=0.34,<2
+torch==2.8.0
+torchvision==0.23.0
+numpy==2.2.6
+Pillow==11.3.0
+PyYAML==6.0.3
+scipy==1.15.3
+tqdm==4.67.1
+yacs==0.1.8
+higher==0.2.1
+pandas==2.3.3
+matplotlib==3.10.7
+scikit-image==0.25.2
+imageio==2.37.2
+opencv-python-headless==4.11.0.86
+pycocotools==2.0.10
+shapely==2.1.2
+pyclipper==1.4.0
+huggingface-hub==1.18.0
+segment-anything @ https://github.com/facebookresearch/segment-anything/archive/dca509fe793f601edb92606367a655c15ac00fdf.zip

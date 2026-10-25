@@ -1,140 +1,66 @@
 # ReMask
 
-Reference PyTorch implementation for source-free domain-adaptive semantic segmentation, with GTA5 → Cityscapes and underwater UIIS/USIS10K → SUIM configurations.
-
-**Scope:** this GitHub repository is the compact reference implementation. Its training pipeline and checkpoints have not been verified as numerically identical to the original HPC research runs or the paper's final ablation recipe. See [HANDOFF.md](HANDOFF.md) for the current asset inventory and known limitations.
+Reference implementation of ReMask and underwater source-free domain adaptation baselines.
 
 ## Setup
 
-Use Linux with Python 3.10 and a PyTorch/torchvision pair compatible with the machine's CUDA driver. Install the CUDA-enabled PyTorch build first (choose the command from the [official PyTorch selector](https://pytorch.org/get-started/locally/)); then install this project:
+Linux, Python 3.10–3.13 and a CUDA-capable NVIDIA GPU. The baseline recipes use one GPU with at least 12 GiB free memory.
 
 ```bash
-git clone https://github.com/Kuan2vn/ReMask.git
-cd ReMask
-python3.10 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-# Install the matching torch and torchvision wheels from https://pytorch.org/get-started/locally/
-python -m pip install -r requirements.txt
-python -m pip install -e .
-python -c 'import torch; print(torch.__version__, torch.cuda.is_available())'
+pip install -r requirements.txt
 ```
 
-On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. The code also needs a CUDA-compatible PyTorch build for GPU training. The optional `pycocotools` dependency is only needed for label preparation utilities.
+## Underwater baselines
 
-Download the ImageNet ResNet-101 initialization file to `pretrain/resnet101-5d3b4d8f.pth` (or edit `model.imagenet_weights` in your YAML):
+Run Stable-ST, SeCoV2 and DAPASS sequentially for both UIIS→SUIM and USIS10K→SUIM:
 
 ```bash
-mkdir -p pretrain
-curl -L https://download.pytorch.org/models/resnet101-5d3b4d8f.pth -o pretrain/resnet101-5d3b4d8f.pth
+python baselines/run.py --method all --protocol all --data /path/to/SUIM
 ```
 
-## Data and checkpoints
-
-Datasets and experiment checkpoints are not committed to Git. The configs contain example absolute paths; edit them to match your machine. Image and mask directories are searched recursively, with image/mask pairs matched by filename stem.
-
-### UIIS/USIS10K → SUIM
-
-Public semantic dataset repositories already on Hugging Face:
-
-- [UIIS semantic masks](https://huggingface.co/datasets/kuan2/UIIS-semantic)
-- [USIS10K semantic masks](https://huggingface.co/datasets/kuan2/USIS10K-semantic)
-
-Download with the Hugging Face CLI included in `requirements.txt`:
+For a single experiment:
 
 ```bash
-hf download kuan2/UIIS-semantic --repo-type dataset --local-dir data/UIIS
-hf download kuan2/USIS10K-semantic --repo-type dataset --local-dir data/USIS10K
+python baselines/run.py --method stable_st --protocol uiis_to_suim --data /path/to/SUIM
 ```
 
-Inspect the downloaded directories and set `data.source.images` and `data.source.masks` in the matching YAML to the actual image and mask folders. The source folders must contain paired images and common 8-class masks.
+Methods: `stable_st`, `secov2`, `dapass`. Protocols: `uiis_to_suim`, `usis10k_to_suim`.
+Source checkpoints are downloaded automatically from [Hugging Face](https://huggingface.co/kuan2/remask-checkpoints); SeCoV2 also downloads official SAM ViT-B weights. Downloads are revision/hash checked and cached in `assets/baselines`. No ImageNet download or source images are needed for these adaptation runs.
 
-SUIM is currently in the owner's private backup [kuan2/remask_underwater](https://huggingface.co/datasets/kuan2/remask_underwater); it is not a public download. After obtaining the dataset from an authorized source, configure:
+Prepare SUIM with this layout:
 
 ```text
-data/SUIM/train_val/images/
-data/SUIM/TEST/images/
-data/SUIM/TEST/masks/
+SUIM/train_val/images/     # 1,525 unlabeled training images
+SUIM/TEST/images/          # 110 evaluation images
+SUIM/TEST/masks/           # RGB SUIM .bmp or .png masks
 ```
 
-The training config uses target training images only; target validation masks are used by evaluation. Keep them out of adaptation training.
-
-### GTA5 → Cityscapes
-
-GTA5 raw game-derived images and Cityscapes are not mirrored in this repository. Obtain them through their authorized sources and comply with their terms. Cityscapes requires an account and its [terms prohibit redistribution](https://www.cityscapes-dataset.com/license/); do not use the private Cityscapes backup as a public download mirror. GTA5 is game-derived; use the [original dataset page](https://download.visinf.tu-darmstadt.de/data/from_games/) and do not publicly mirror its files without explicit redistribution permission. GTA5 shards must be extracted locally to image and label folders.
-
-Expected paths for `configs/gta5_to_cityscapes.yaml`:
-
-```text
-data/GTA5/images/
-data/GTA5/labels/
-data/Cityscapes/leftImg8bit/train/
-data/Cityscapes/leftImg8bit/val/
-data/Cityscapes/gtFine/val/
-```
-
-The config expects Cityscapes-style label IDs. Set each `data.*` path to the folders above (or change them directly in the YAML). For adaptation from a source checkpoint, GTA5 is not needed; it is needed to retrain the source model.
-
-### Source checkpoints
-
-Three source-initialization checkpoints are now public in [kuan2/remask-checkpoints](https://huggingface.co/kuan2/remask-checkpoints). Download the full release:
+Validate setup and source loading on CPU, or run a short GPU correctness check:
 
 ```bash
-hf download kuan2/remask-checkpoints --repo-type model --local-dir pretrain/checkpoints
+python baselines/run.py --method all --protocol all --data /path/to/SUIM --check
+python baselines/run.py --method all --protocol all --data /path/to/SUIM --smoke
 ```
 
-| Experiment | Checkpoint path | Iteration | Classes |
-|---|---|---:|---:|
-| UIIS → SUIM | `pretrain/checkpoints/uiis_to_suim/source_iter_18000.pth` | 18,000 | 8 |
-| USIS10K → SUIM | `pretrain/checkpoints/usis10k_to_suim/source_iter_29000.pth` | 29,000 | 8 |
-| GTA5 → Cityscapes | `pretrain/checkpoints/gta5_to_cityscapes/source_iter_20000.pth` | 20,000 | 19 |
+Full runs use batch 4, seed 1, 30,000 updates and evaluation every 500 updates. Outputs are in `outputs/baselines/full/<method>/<protocol>`, including metrics and best/last/resume checkpoints. `--output` changes the output root. `--session-hours N` enables a checkpoint-safe pause; repeat the same command to resume a clean pause. Smoke outputs are separate and are not benchmark results.
 
-The original UIIS/USIS10K filenames say `iter020000`, but their checkpoint metadata gives the actual iterations in this table. These files are source models for adaptation, not final target-adapted ReMask outputs. No final target checkpoint has been published yet. The release README lists SHA-256 values.
+Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port; DAPASS is a paper-based DeepLab port because the released adaptation code is incomplete. See [baseline protocol](baselines/underwater/PROTOCOL.md) for the exact scope, resources and upstream revisions.
 
-To train a new source model from labeled data:
+## ReMask reference
+
+Set dataset paths in `configs/uiis_to_suim.yaml`, `configs/usis10k_to_suim.yaml` or `configs/gta5_to_cityscapes.yaml`. Source weights are public:
 
 ```bash
-python train_source.py --config configs/gta5_to_cityscapes.yaml
-```
-
-For source-free GTA5 → Cityscapes adaptation, use the released source checkpoint:
-
-```bash
-python train_remask.py \
-  --config configs/gta5_to_cityscapes.yaml \
-  --source-checkpoint pretrain/checkpoints/gta5_to_cityscapes/source_iter_20000.pth
-```
-
-Available configs are `configs/gta5_to_cityscapes.yaml`, `configs/uiis_to_suim.yaml`, and `configs/usis10k_to_suim.yaml`.
-
-## Train and evaluate
-
-Run all adaptation stages (Stage 1 followed by Stage 2):
-
-```bash
-python train_remask.py \
-  --config configs/uiis_to_suim.yaml \
-  --source-checkpoint pretrain/UIIS_source.pth
-```
-
-Run one stage only with `--stage stage1` or `--stage stage2`. Override YAML values with repeated `--set dotted.key=value` options. For evaluation:
-
-```bash
-python evaluate.py \
-  --config configs/uiis_to_suim.yaml \
+hf download kuan2/remask-checkpoints --local-dir pretrain/checkpoints
+python train_remask.py --config configs/uiis_to_suim.yaml \
+  --source-checkpoint pretrain/checkpoints/uiis_to_suim/source_iter_18000.pth \
+  --set model.imagenet_weights=null
+python evaluate.py --config configs/uiis_to_suim.yaml \
   --checkpoint outputs/uiis_to_suim/adapt/stage2_final.pth
 ```
 
-Outputs default to the `output_dir` in the selected YAML. Keep the exact code revision, resolved config, checkpoint hash, random seed, environment, logs, and evaluation protocol for each ablation.
+The compact ReMask reference has not been numerically matched to the original manuscript runs. The paper reports 49.82/50.30 mIoU on UIIS/USIS10K→SUIM and 58.70 on GTA5→Cityscapes. These are reported paper results, not new reproduction results. [Data and checkpoint notes](HANDOFF.md).
 
-## Results and citation
+## Acknowledgements
 
-The results below are reported by the associated paper; they are not a claim that this compact reference implementation has reproduced them.
-
-| Source → target | mIoU (%) |
-|---|---:|
-| UIIS → SUIM | 49.82 |
-| USIS10K → SUIM | 50.30 |
-| GTA5 → Cityscapes | 58.70 |
-
-Please cite the ReMask paper when available. The SND baseline is described in [Stable Neighbor Denoising for Source-free Domain Adaptive Segmentation](https://openaccess.thecvf.com/content/CVPR2024/html/Zhao_Stable_Neighbor_Denoising_for_Source-free_Domain_Adaptive_Segmentation_CVPR_2024_paper.html).
+[Stable-ST](https://github.com/DZhaoXd/Stable-ST), [SeCoV2](https://github.com/DZhaoXd/SeCoV2), [DAPASS](https://github.com/ZZZPhaethon/DAPASS), [SND](https://github.com/DZhaoXd/SND) and [Segment Anything](https://github.com/facebookresearch/segment-anything).
