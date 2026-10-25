@@ -46,7 +46,7 @@ SeCoV2 also downloads official SAM ViT-B weights automatically to `assets/baseli
 
 ## Underwater baselines
 
-Run Stable-ST, SeCoV2 and DAPASS sequentially for both UIIS→SUIM and USIS10K→SUIM:
+Run Stable-ST and SeCoV2 sequentially for both UIIS→SUIM and USIS10K→SUIM (four runs):
 
 ```bash
 python baselines/run.py --method all --protocol all --data data/SUIM
@@ -58,7 +58,7 @@ For a single experiment:
 python baselines/run.py --method stable_st --protocol uiis_to_suim --data data/SUIM
 ```
 
-Methods: `stable_st`, `secov2`, `dapass`. Protocols: `uiis_to_suim`, `usis10k_to_suim`.
+Methods: `stable_st`, `secov2`. Protocols: `uiis_to_suim`, `usis10k_to_suim`.
 No ImageNet download or source images are needed for these adaptation runs.
 
 Validate setup and source loading on CPU, or run a short GPU correctness check:
@@ -70,7 +70,7 @@ python baselines/run.py --method all --protocol all --data data/SUIM --smoke
 
 Full runs use batch 4, seed 1, 30,000 updates and evaluation every 500 updates. Outputs are in `outputs/baselines/full/<method>/<protocol>`, including metrics and best/last/resume checkpoints. `--output` changes the output root. `--session-hours N` enables a checkpoint-safe pause; repeat the same command to resume a clean pause. Smoke outputs are separate and are not benchmark results.
 
-Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port; DAPASS is a paper-based DeepLab port because the released adaptation code is incomplete. See [baseline protocol](baselines/underwater/PROTOCOL.md) for the exact scope, resources and upstream revisions.
+Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port with a simplified region head and auxiliary schedule; it is not a faithful reproduction of the released SCC trainer. DAPASS is excluded from this launcher because the checked upstream revision lacks an operational adaptation trainer. See [baseline protocol](baselines/underwater/PROTOCOL.md) for implementation scope and upstream revisions.
 
 ## ReMask reference
 

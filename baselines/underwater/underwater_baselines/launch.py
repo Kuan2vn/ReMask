@@ -16,7 +16,7 @@ from .assets import SOURCES, sam_checkpoint, source_checkpoint
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[1]
-METHODS = ('stable_st', 'secov2', 'dapass')
+METHODS = ('stable_st', 'secov2')
 IMAGE_SUFFIXES = {'.jpg', '.jpeg', '.png', '.bmp'}
 
 
@@ -124,6 +124,8 @@ def run_lock(output):
 
 
 def command_for(method, protocol, record, view, output, manifest, smoke, seconds, sam=None):
+    if method not in METHODS:
+        raise ValueError(f'Unsupported benchmark method: {method}')
     env = dict(os.environ, OMP_NUM_THREADS='4', MKL_NUM_THREADS='4')
     if method == 'stable_st':
         env.update(PYTHONPATH=os.pathsep.join([str(ROOT / 'stable_st'), str(ROOT)]),
@@ -137,7 +139,7 @@ def command_for(method, protocol, record, view, output, manifest, smoke, seconds
     env['PYTHONPATH'] = str(ROOT)
     command = [sys.executable, '-u', '-m', 'underwater_baselines.run', '--method', method, '--protocol', protocol,
                '--source-manifest', str(manifest), '--data', str(view), '--output', str(output),
-               '--author-root', str(ROOT / 'references' / ('SeCoV2' if method == 'secov2' else 'DAPASS')),
+               '--author-root', str(ROOT / 'references/SeCoV2'),
                '--steps', '2' if smoke else '30000', '--eval-period', '1' if smoke else '500',
                '--session-seconds', str(0 if smoke else seconds)]
     if smoke:
@@ -189,7 +191,7 @@ def launch(method, protocol, data, output, record, sam, smoke, seconds):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Stable-ST, SeCoV2 and DAPASS on UIIS/USIS10K -> SUIM')
+    parser = argparse.ArgumentParser(description='Stable-ST and SeCoV2 on UIIS/USIS10K -> SUIM')
     parser.add_argument('--method', choices=(*METHODS, 'all'), required=True)
     parser.add_argument('--protocol', choices=(*SOURCES, 'all'), required=True)
     parser.add_argument('--data', type=Path, default=REPO / 'data/SUIM')

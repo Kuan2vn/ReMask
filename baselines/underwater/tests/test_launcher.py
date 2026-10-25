@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from PIL import Image
 from underwater_baselines.assets import SAM_SHA256, SOURCE_REVISION, source_checkpoint, verify
-from underwater_baselines.launch import check_existing, command_for, configuration, data_view, launch, run_lock, validate_data
+from underwater_baselines.launch import METHODS, check_existing, command_for, configuration, data_view, launch, main, run_lock, validate_data
 
 
 def target_data(root):
@@ -108,7 +108,25 @@ print('Native loader GT isolation and evaluation passed')
                 env=dict(os.environ, PYTHONPATH=os.pathsep.join([str(ROOT / 'stable_st'), str(ROOT)])))
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_all_six_commands_keep_full_recipe_and_diagnostic_overrides_separate(self):
+    def test_all_dispatches_only_supported_benchmarks_and_rejects_dapass(self):
+        with mock.patch.object(sys, 'argv', ['run.py', '--method', 'all', '--protocol', 'all', '--data', '/SUIM']), \
+            mock.patch('underwater_baselines.launch.validate_data', return_value=Path('/SUIM')), \
+            mock.patch('torch.cuda.is_available', return_value=True), \
+            mock.patch('underwater_baselines.launch.source_checkpoint', return_value={'path': '/source.pth'}), \
+            mock.patch('underwater_baselines.launch.sam_checkpoint', return_value=Path('/sam.pth')), \
+            mock.patch('underwater_baselines.launch.launch') as start:
+            main()
+        self.assertEqual([(call.args[0], call.args[1]) for call in start.call_args_list], [
+            ('stable_st', 'uiis_to_suim'), ('stable_st', 'usis10k_to_suim'),
+            ('secov2', 'uiis_to_suim'), ('secov2', 'usis10k_to_suim')])
+        result = subprocess.run([sys.executable, str(ROOT.parents[1] / 'baselines/run.py'),
+                                 '--method', 'dapass', '--protocol', 'all'], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('invalid choice', result.stderr)
+        with self.assertRaisesRegex(ValueError, 'Unsupported benchmark method'):
+            command_for('dapass', 'uiis_to_suim', {}, Path('/data'), Path('/out'), Path('/manifest'), False, 0)
+
+    def test_all_four_commands_keep_full_recipe_and_diagnostic_overrides_separate(self):
         from core.configs import cfg
         parsed = cfg.clone()
         parsed.merge_from_file(str(ROOT / 'configs/stable_st.yaml'))
@@ -118,7 +136,7 @@ print('Native loader GT isolation and evaluation passed')
         self.assertEqual(parsed.SOLVER.MAX_ITER, 30000)
         self.assertEqual(parsed.SOLVER.STOP_ITER, 30000)
         self.assertEqual(parsed.SOLVER.CHECKPOINT_PERIOD, 500)
-        for method in ('stable_st', 'secov2', 'dapass'):
+        for method in METHODS:
             for protocol in ('uiis_to_suim', 'usis10k_to_suim'):
                 command, env, cwd = command_for(method, protocol, dict(path='/weights/source.pth'),
                     Path('/data/SUIM'), Path('/output/run'), Path('/output/run/sources.json'), False, float('inf'),
