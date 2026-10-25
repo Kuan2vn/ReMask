@@ -10,36 +10,49 @@ Linux, Python 3.10–3.13 and a CUDA-capable NVIDIA GPU. The baseline recipes us
 pip install -r requirements.txt
 ```
 
+## Datasets
+
+Download the exact [SUIM split](https://huggingface.co/datasets/kuan2/SUIM-ReMask) used in these experiments (1,525 train / 110 test images). The repository is private; log in with a Hugging Face account that has access:
+
+```bash
+hf auth login
+hf download kuan2/SUIM-ReMask SUIM.zip --repo-type dataset --local-dir data
+python -m zipfile -e data/SUIM.zip data
+```
+
+This creates `data/SUIM/{train_val,TEST}/{images,masks}`. The adaptation launcher excludes training masks from its data view.
+
+For source retraining, download [UIIS](https://huggingface.co/datasets/kuan2/UIIS-semantic) and [USIS10K](https://huggingface.co/datasets/kuan2/USIS10K-semantic):
+
+```bash
+hf download kuan2/UIIS-semantic --repo-type dataset --local-dir data/UIIS
+hf download kuan2/USIS10K-semantic --repo-type dataset --local-dir data/USIS10K
+```
+
+Configure source paths and mask encoding as described in [data notes](HANDOFF.md). Adaptation from the released source checkpoints needs only SUIM.
+
 ## Underwater baselines
 
 Run Stable-ST, SeCoV2 and DAPASS sequentially for both UIIS→SUIM and USIS10K→SUIM:
 
 ```bash
-python baselines/run.py --method all --protocol all --data /path/to/SUIM
+python baselines/run.py --method all --protocol all --data data/SUIM
 ```
 
 For a single experiment:
 
 ```bash
-python baselines/run.py --method stable_st --protocol uiis_to_suim --data /path/to/SUIM
+python baselines/run.py --method stable_st --protocol uiis_to_suim --data data/SUIM
 ```
 
 Methods: `stable_st`, `secov2`, `dapass`. Protocols: `uiis_to_suim`, `usis10k_to_suim`.
 Source checkpoints are downloaded automatically from [Hugging Face](https://huggingface.co/kuan2/remask-checkpoints); SeCoV2 also downloads official SAM ViT-B weights. Downloads are revision/hash checked and cached in `assets/baselines`. No ImageNet download or source images are needed for these adaptation runs.
 
-Prepare SUIM with this layout:
-
-```text
-SUIM/train_val/images/     # 1,525 unlabeled training images
-SUIM/TEST/images/          # 110 evaluation images
-SUIM/TEST/masks/           # RGB SUIM .bmp or .png masks
-```
-
 Validate setup and source loading on CPU, or run a short GPU correctness check:
 
 ```bash
-python baselines/run.py --method all --protocol all --data /path/to/SUIM --check
-python baselines/run.py --method all --protocol all --data /path/to/SUIM --smoke
+python baselines/run.py --method all --protocol all --data data/SUIM --check
+python baselines/run.py --method all --protocol all --data data/SUIM --smoke
 ```
 
 Full runs use batch 4, seed 1, 30,000 updates and evaluation every 500 updates. Outputs are in `outputs/baselines/full/<method>/<protocol>`, including metrics and best/last/resume checkpoints. `--output` changes the output root. `--session-hours N` enables a checkpoint-safe pause; repeat the same command to resume a clean pause. Smoke outputs are separate and are not benchmark results.

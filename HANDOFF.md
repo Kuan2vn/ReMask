@@ -15,6 +15,8 @@ Provide SUIM using the layout in [README.md](README.md). The launcher creates a 
 
 [UIIS-semantic](https://huggingface.co/datasets/kuan2/UIIS-semantic) and [USIS10K-semantic](https://huggingface.co/datasets/kuan2/USIS10K-semantic) are available for source retraining. Use common 8-class labels: background, diver, plant, wreck, robot, reef, fish, floor. Native UIIS indexed labels require remapping; USIS10K background and ignore variants are separate protocols.
 
+After the README downloads, UIIS training images/masks are in `data/UIIS/train_val/{images,masks}`. Use `label_format: uiis_raw` for native indexed PNG masks, or `uiis_rgb` for RGB masks. For USIS10K-background, images are in `data/USIS10K/USIS10K/train` and masks in `data/USIS10K/semantic_bg/train/masks`; use `label_format: common`. Set these paths in the corresponding source config before retraining.
+
 ## GTA5→Cityscapes
 
 The public [checkpoint release](https://huggingface.co/kuan2/remask-checkpoints) also contains `gta5_to_cityscapes/source_iter_20000.pth` with 19 classes. Obtain GTA5 and Cityscapes from their authorized dataset sources and set paths in `configs/gta5_to_cityscapes.yaml`. GTA5 images are required for source retraining, not source-free adaptation from a complete checkpoint.
