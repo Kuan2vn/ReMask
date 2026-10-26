@@ -114,10 +114,12 @@ def _ensure_classifier_buffers_from_state(classifier, state_dict):
         return
     clean_state = _state_dict_for_load(state_dict)
     cls_module = _unwrap(classifier)
+    # Checkpoints are loaded on CPU after the classifier has moved to its device.
+    device = next(cls_module.parameters()).device
     if "global_prototypes" in clean_state and not hasattr(cls_module, "global_prototypes"):
         cls_module.register_buffer(
             "global_prototypes",
-            torch.zeros_like(clean_state["global_prototypes"]),
+            torch.zeros_like(clean_state["global_prototypes"], device=device),
         )
     if (
         "global_prototypes_valid" in clean_state
@@ -125,7 +127,7 @@ def _ensure_classifier_buffers_from_state(classifier, state_dict):
     ):
         cls_module.register_buffer(
             "global_prototypes_valid",
-            torch.zeros_like(clean_state["global_prototypes_valid"]),
+            torch.zeros_like(clean_state["global_prototypes_valid"], device=device),
         )
 
 

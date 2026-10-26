@@ -1,10 +1,10 @@
 {
   "origin": "Original ReMask trainer with isolated experiment/evaluation/session hooks",
   "original_trainer_sha256": "a950e973b1a6fa422e8bae974d66ce2534810c5f364c60e6ca0cbc3a73c9bf86",
-  "trainer_sha256": "7ec02f2b25094df0e6fc656fd8984599db9b4dfe6e962418ad6eea0035f4b86c",
+  "trainer_sha256": "1e43f8f992fc702b6c7385a2ad8e04d4a91ce7d8204ed5659209027488f2017a",
   "training_math": "UA/TC/UWRG and host gradient code retained;runtime overrides declared per arm",
   "files": {
-    "trainer.py": "7ec02f2b25094df0e6fc656fd8984599db9b4dfe6e962418ad6eea0035f4b86c",
+    "trainer.py": "1e43f8f992fc702b6c7385a2ad8e04d4a91ce7d8204ed5659209027488f2017a",
     "core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "core/apis/inference.py": "46f5a09bf2f428a6e85906c0ff843c0c60cff636ac2640f225d4cedc0ef13e33",
     "core/apis/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -42,6 +42,7 @@
     "bounded donor retries for absent/tiny pseudo-label classes",
     "same full image size;small smoke-only override",
     "device-neutral candidate statistics for CPU integration",
-    "UWRG remains independently enabled when the UA/temporal base weight is disabled for an ablation"
+    "UWRG remains independently enabled when the UA/temporal base weight is disabled for an ablation",
+    "Allocate dynamically restored prototype buffers on the classifier device after CPU checkpoint loading"
   ]
 }

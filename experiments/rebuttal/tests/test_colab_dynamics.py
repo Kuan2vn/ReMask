@@ -92,7 +92,7 @@ class ColabAndDynamics(unittest.TestCase):
             nb=json.loads((HERE/'colab.ipynb').read_text(encoding='utf-8'))
             source=next(''.join(c['source']) for c in nb['cells'] if c['cell_type']=='code')
             output=root/'drive_output'
-            source=source.replace("'/content/drive/MyDrive/ReMask_component_experiments_v2'",repr(str(output)))
+            source=source.replace("'/content/drive/MyDrive/ReMask_component_experiments_v3'",repr(str(output)))
             mounted=[];google=SimpleNamespace(drive=SimpleNamespace(mount=mounted.append))
             original=Path.cwd();namespace={}
             try:
@@ -119,7 +119,7 @@ class ColabAndDynamics(unittest.TestCase):
         smoke=next(s for s in sources if 'COMMON =' in s)
         self.assertIn("'--save-pixel-diagnostics'",smoke)
         self.assertIn("*COMMON, '--session-hours'",smoke)
-        self.assertIn('ReMask_component_experiments_v2',sources[0])
+        self.assertIn('ReMask_component_experiments_v3',sources[0])
         self.assertFalse(any(c.get('outputs') for c in notebook['cells']))
 
     def test_stability_requires_all_agreements_and_unchanged_label(self):

@@ -14,7 +14,7 @@ After the repository's dataset/setup instructions:
 python experiments/rebuttal/run.py --suite priority --protocol all --data data/SUIM --output /persistent/ReMask_experiments
 ```
 
-Repeat the same command/output after a pause or runtime replacement. The default session budget is nine hours; a phase pauses at its next saved evaluation. Download/setup and frozen analysis take additional session time. The notebook adjusts the remaining training budget after setup/analysis. Its v2 output/code pin is separate from older runs; do not resume a v1 run with changed code/settings.
+Repeat the same command/output after a pause or runtime replacement. The default session budget is nine hours; a phase pauses at its next saved evaluation. Download/setup and frozen analysis take additional session time. The notebook adjusts the remaining training budget after setup/analysis. Its v3 output/code pin includes the CUDA prototype-buffer resume fix and is separate from v1/v2 outputs; preserve old runs rather than mixing code/settings in one output. A tiny CUDA checkpoint/loss check runs before the native smoke.
 
 | Suite | Experiments |
 |---|---|
