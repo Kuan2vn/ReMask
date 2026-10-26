@@ -11,14 +11,14 @@ model:
 
 data:
   source:
-    images: /datasets/UIIS/train/images
-    masks: /datasets/UIIS/train/masks
-    label_format: common
+    images: data/UIIS/train_val/images
+    masks: data/UIIS/train_val/masks
+    label_format: uiis_auto
   target_train:
-    images: /datasets/SUIM/train_val/images
+    images: data/SUIM/train_val/images
   target_val:
-    images: /datasets/SUIM/TEST/images
-    masks: /datasets/SUIM/TEST/masks
+    images: data/SUIM/TEST/images
+    masks: data/SUIM/TEST/masks
     label_format: suim_rgb
   full_size: [1280, 640]
   crop_size: [960, 480]

@@ -22,6 +22,8 @@ python -m zipfile -e data/SUIM.zip data
 
 This creates `data/SUIM/{train_val,TEST}/{images,masks}`. The adaptation launcher excludes training masks from its data view.
 
+If you already have `remask_datasets.zip`, extract it **at the repository root** instead. It contains the `data/` prefix and all three underwater datasets. The [Colab notebook](experiments/rebuttal/colab.ipynb) accepts this ZIP or an existing extraction and verifies the audited ZIP before extracting; Hugging Face authentication is only needed for the private SUIM download fallback.
+
 For source retraining, download [UIIS](https://huggingface.co/datasets/kuan2/UIIS-semantic) and [USIS10K](https://huggingface.co/datasets/kuan2/USIS10K-semantic):
 
 ```bash
@@ -76,7 +78,7 @@ Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port w
 
 For native-trainer component ablations, generic/UW probes and stage-transition experiments, use the [experiment runner and Colab notebook](experiments/rebuttal/README.md). These include checkpoint-safe continuation and all requested controls.
 
-Set dataset paths in `configs/uiis_to_suim.yaml`, `configs/usis10k_to_suim.yaml` or `configs/gta5_to_cityscapes.yaml`, then use the source checkpoint downloaded above:
+The underwater configs use the dataset paths above; UIIS automatically decodes its native indexed PNG or RGB/BMP palette. Set your paths in `configs/gta5_to_cityscapes.yaml` for the urban task. Use the source checkpoint downloaded above:
 
 ```bash
 python train_remask.py --config configs/uiis_to_suim.yaml \

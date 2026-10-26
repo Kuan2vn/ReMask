@@ -1,9 +1,9 @@
 name: Baseline checks
 on:
   push:
-    paths: ['baselines/**', 'experiments/rebuttal/**', 'requirements.txt', '.github/workflows/baselines.yml']
+    paths: ['baselines/**', 'experiments/rebuttal/**', 'remask/data/taxonomy.py', 'configs/uiis_to_suim.yaml', 'configs/usis10k_to_suim.yaml', 'requirements.txt', '.github/workflows/baselines.yml']
   pull_request:
-    paths: ['baselines/**', 'experiments/rebuttal/**', 'requirements.txt', '.github/workflows/baselines.yml']
+    paths: ['baselines/**', 'experiments/rebuttal/**', 'remask/data/taxonomy.py', 'configs/uiis_to_suim.yaml', 'configs/usis10k_to_suim.yaml', 'requirements.txt', '.github/workflows/baselines.yml']
 permissions:
   contents: read
 jobs:

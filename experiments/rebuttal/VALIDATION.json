@@ -1,36 +1,79 @@
 {
   "date": "2026-10-26",
-  "unit_checks_passed": 34,
-  "experiment_recipes_smoked": 18,
-  "source_protocols": [
-    "uiis_to_suim",
-    "usis10k_to_suim"
-  ],
-  "completed_training_phase_checks": 52,
-  "native_snapshot_files_verified": 30,
+  "unit_checks_passed": 45,
+  "baseline_checks": 24,
+  "experiment_checks": 21,
+  "release_code_sha256": "0070b26194c42090ddf861f0db746f18bcf5293fe01bede8059a7c69f75adaa0",
   "native_trainer_sha256": "7ec02f2b25094df0e6fc656fd8984599db9b4dfe6e962418ad6eea0035f4b86c",
-  "release_code_sha256": "ac14271da8054422ff2e6920b5e613f8ee19a71b33215d4bc81de502bac03de9",
-  "integration_mode": {
-    "device": "CPU",
-    "train_images": 8,
-    "evaluation_images": 2,
-    "reference_updates": {
-      "A": 2,
-      "B": 2
-    }
+  "native_gradient_code_unchanged": true,
+  "current_native_integration": {
+    "protocols": [
+      "uiis_to_suim",
+      "usis10k_to_suim"
+    ],
+    "phases": 4,
+    "optimizer_updates_per_phase": 2,
+    "new_process_resume": true,
+    "pseudo_label_refresh": true,
+    "pixel_map_observations": 12,
+    "native_smoke_code_sha256": "15791d7aad196053433abfccab0f1b370e8f4d9b85aafd27312312af817061c9",
+    "subsequent_changes": "Read-only reporting/plot labels and corresponding tests; training/control/run code unchanged"
   },
-  "verified": [
-    "native source initialization and optimizer steps",
-    "new-process full-state resume",
-    "all declared recipes and fixed update counters",
-    "UWRG retained when temporal/base reliability disabled",
-    "shared-parent branching and continuous restoration",
-    "pseudo-label refresh before pause",
-    "frozen scoring and paired report export",
-    "FP32 gradient parity for activation checkpointing",
-    "target-train masks excluded"
-  ],
+  "current_notebook_validation": {
+    "code_cells_parsed": 13,
+    "setup_cell_executed_with_mock_drive": true,
+    "local_git_origin_pin_and_resume_tested": true,
+    "real_zip_extracted_at_repo_root": true,
+    "source_checkpoints_strict_cpu_load_both": true,
+    "source_dataset_configs_read_both": true,
+    "frozen_paired_ua_checkpoint_export_both": true,
+    "older_output_without_pixel_maps_read": true
+  },
+  "dataset_zip": {
+    "sha256": "824a87636625ebf170b38225a8605f111d15f7c8d3b4c774bd95ca8f75b5ce77",
+    "files_crc_checked": 44432,
+    "images_and_masks_fully_decoded": 44422,
+    "suim_files_matching_trusted_sha256_manifest": 3270,
+    "usis_background_ignore_pairs_checked": 10632,
+    "semantic_coco_rasterization_rebuilt": false
+  },
   "full_resolution_gpu_validation": false,
   "full_30k_results": false,
-  "colab_runtime_executed": false
+  "colab_runtime_executed": false,
+  "previous_release_validation": {
+    "date": "2026-10-26",
+    "unit_checks_passed": 34,
+    "experiment_recipes_smoked": 18,
+    "source_protocols": [
+      "uiis_to_suim",
+      "usis10k_to_suim"
+    ],
+    "completed_training_phase_checks": 52,
+    "native_snapshot_files_verified": 30,
+    "native_trainer_sha256": "7ec02f2b25094df0e6fc656fd8984599db9b4dfe6e962418ad6eea0035f4b86c",
+    "release_code_sha256": "ac14271da8054422ff2e6920b5e613f8ee19a71b33215d4bc81de502bac03de9",
+    "integration_mode": {
+      "device": "CPU",
+      "train_images": 8,
+      "evaluation_images": 2,
+      "reference_updates": {
+        "A": 2,
+        "B": 2
+      }
+    },
+    "verified": [
+      "native source initialization and optimizer steps",
+      "new-process full-state resume",
+      "all declared recipes and fixed update counters",
+      "UWRG retained when temporal/base reliability disabled",
+      "shared-parent branching and continuous restoration",
+      "pseudo-label refresh before pause",
+      "frozen scoring and paired report export",
+      "FP32 gradient parity for activation checkpointing",
+      "target-train masks excluded"
+    ],
+    "full_resolution_gpu_validation": false,
+    "full_30k_results": false,
+    "colab_runtime_executed": false
+  }
 }

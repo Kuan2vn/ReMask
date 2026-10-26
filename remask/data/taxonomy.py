@@ -127,6 +127,8 @@ def indexed_mask_to_ids(values: np.ndarray, mapping=None, ignore_label: int = IG
 
 
 def decode_mask(mask: Image.Image, label_format: str, num_classes: int) -> np.ndarray:
+    if label_format == "uiis_auto":
+        label_format = "uiis_raw" if mask.mode in ("L", "P", "I", "I;16") else "uiis_rgb"
     if label_format == "suim_rgb":
         array = color_mask_to_ids(np.asarray(mask.convert("RGB")), SUIM_COLOR_TO_COMMON_ID)
     elif label_format == "uiis_rgb":

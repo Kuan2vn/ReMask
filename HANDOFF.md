@@ -15,7 +15,7 @@ Provide SUIM using the layout in [README.md](README.md). The launcher creates a 
 
 [UIIS-semantic](https://huggingface.co/datasets/kuan2/UIIS-semantic) and [USIS10K-semantic](https://huggingface.co/datasets/kuan2/USIS10K-semantic) are available for source retraining. Use common 8-class labels: background, diver, plant, wreck, robot, reef, fish, floor. Native UIIS indexed labels require remapping; USIS10K background and ignore variants are separate protocols.
 
-After the README downloads, UIIS training images/masks are in `data/UIIS/train_val/{images,masks}`. Use `label_format: uiis_raw` for native indexed PNG masks, or `uiis_rgb` for RGB masks. For USIS10K-background, images are in `data/USIS10K/USIS10K/train` and masks in `data/USIS10K/semantic_bg/train/masks`; use `label_format: common`. Set these paths in the corresponding source config before retraining.
+After the README downloads or extracting `remask_datasets.zip` at the repository root, UIIS training images/masks are in `data/UIIS/train_val/{images,masks}`. The default `label_format: uiis_auto` maps native indexed PNG and UIIS RGB/BMP masks to the same common IDs; explicit `uiis_raw` and `uiis_rgb` remain available. For USIS10K-background, images are in `data/USIS10K/USIS10K/train` and masks in `data/USIS10K/semantic_bg/train/masks`; use `label_format: common`. The underwater source configs now use these relative paths. The `semantic_ignore` masks are a different annotation policy, not interchangeable with the released background-source checkpoint protocol.
 
 ## GTA5→Cityscapes
 

@@ -43,6 +43,7 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
     signature=dict(arm=arm,protocol=protocol,phase=p,source_sha256=source['sha256'],dataset_sha256=data_sha,
                    code_sha256=code_sha,diagnostic=args.smoke,activation_checkpointing=not args.no_activation_checkpointing,
                    panel_images=args.panel_images,quality_stride=args.quality_stride,smoke_refresh=args.smoke_refresh,
+                   save_pixel_diagnostics=args.save_pixel_diagnostics,
                    device=args.device)
     config=output/'PHASE_CONFIG.json'
     if config.exists() and read_json(config)!=signature:
@@ -74,7 +75,8 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
     if seconds<=0: return False
     task=dict(arm=arm,protocol=protocol,phase=p,source=source,signature=signature,output=str(output.resolve()),
               data=str(view.resolve()),initial_checkpoint=str(checkpoint.resolve()),resume_own=own,
-              seed=args.seed,smoke=args.smoke,smoke_refresh=args.smoke_refresh,device=args.device,seconds=seconds,calibration=calib,
+              seed=args.seed,smoke=args.smoke,smoke_refresh=args.smoke_refresh,
+              save_pixel_diagnostics=args.save_pixel_diagnostics,device=args.device,seconds=seconds,calibration=calib,
               activation_checkpointing=not args.no_activation_checkpointing,
               evaluation_size=[128,96] if args.smoke else [1280,640],
               panel_images=min(args.panel_images,2) if args.smoke else args.panel_images,
@@ -112,6 +114,7 @@ def main():
     parser.add_argument('--seed',type=int,default=1)
     parser.add_argument('--session-hours',type=float,default=9.)
     parser.add_argument('--panel-images',type=int,default=32)
+    parser.add_argument('--save-pixel-diagnostics',action='store_true',help='Save stride-8 same-view teacher/student maps on the fixed unlabeled panel')
     parser.add_argument('--quality-stride',type=int,default=8)
     parser.add_argument('--device',choices=['cuda','cpu'],default='cuda')
     parser.add_argument('--no-activation-checkpointing',action='store_true')

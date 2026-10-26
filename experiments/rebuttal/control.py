@@ -158,7 +158,7 @@ class Control:
         return result
 
     @torch.no_grad()
-    def panel(self,state):
+    def panel(self,state,iteration):
         feature,cls=state['feature_extractor'],state['classifier']
         teacher,teacher_cls=state['teacher_fea'],state['teacher_cls']
         files=sorted((Path(self.task['data'])/'train_val/images').glob('*.jpg'))
@@ -166,6 +166,7 @@ class Control:
         selected=sorted(rng.choice(len(files),min(self.task['panel_images'],len(files)),replace=False).tolist())
         support=np.zeros(8,dtype='int64'); wrong=support.copy()
         drift=drift_pixels=0; raw_kl=0.; pixels=0
+        per_image=[]; sampled_teachers=[]; sampled_mismatches=[]
         for i in selected:
             x=self.image(files[i])
             t=self.logits(teacher,teacher_cls,x,x.shape[-2:]).softmax(1)
@@ -173,18 +174,36 @@ class Control:
             labels=t.argmax(1); mismatch=labels!=s.argmax(1)
             support+=torch.bincount(labels.flatten(),minlength=8).cpu().numpy()
             wrong+=torch.bincount(labels[mismatch],minlength=8).cpu().numpy()
-            raw_kl+=float((t*(t.clamp_min(1e-8).log()-s.clamp_min(1e-8).log())).sum())
+            image_kl=float((t*(t.clamp_min(1e-8).log()-s.clamp_min(1e-8).log())).sum())
+            raw_kl+=image_kl
+            per_image.append(dict(image=files[i].name,pixels=labels.numel(),mismatches=int(mismatch.sum()),
+                                  raw_kl=image_kl/labels.numel()))
+            if self.task.get('save_pixel_diagnostics'):
+                sampled_teachers.append(labels[0,::8,::8].cpu().numpy().astype('uint8'))
+                sampled_mismatches.append(mismatch[0,::8,::8].cpu().numpy())
             pixels+=labels.numel()
             sampled=labels[:,::8,::8].cpu().to(torch.uint8)
             old=self.panel_history.get(files[i].name)
             if old is not None:
                 drift+=int((old!=sampled).sum()); drift_pixels+=sampled.numel()
             self.panel_history[files[i].name]=sampled
+        map_file=None
+        if sampled_teachers:
+            folder=self.out/'diagnostics/maps';folder.mkdir(parents=True,exist_ok=True)
+            target=folder/f'step_{iteration:06d}.npz'
+            with target.with_suffix('.partial').open('wb') as stream:
+                np.savez_compressed(stream,teacher=np.stack(sampled_teachers),
+                                    mismatch=np.stack(sampled_mismatches),
+                                    names=np.asarray([files[i].name for i in selected]),
+                                    pixel_stride=np.int64(8))
+            target.with_suffix('.partial').replace(target)
+            map_file=target.relative_to(self.out).as_posix()
         return dict(images=[files[i].name for i in selected], pixels=int(support.sum()),
                     mismatches=int(wrong.sum()), predicted_class_support=support.tolist(),
                     predicted_class_mismatch=wrong.tolist(), raw_kl=raw_kl/max(pixels,1),
                     teacher_drift=drift/max(drift_pixels,1) if drift_pixels else None,
-                    teacher_drift_pixel_stride=8, manual_labels_used=False)
+                    teacher_drift_pixel_stride=8, per_image=per_image,
+                    pixel_map=map_file, pixel_map_stride=8, manual_labels_used=False)
 
     @torch.no_grad()
     def evaluate(self,iteration,state):
@@ -235,7 +254,7 @@ class Control:
                     quality_rows.append(row)
                 conf,label=t.max(1,keepdim=True)
                 self.shadow[image.name]=(label.cpu().to(torch.uint8),conf.cpu().half())
-            panel=self.panel(state)
+            panel=self.panel(state,iteration)
         finally:
             for module,mode in zip(modules,modes): module.train(mode)
             torch.set_rng_state(rng_state)

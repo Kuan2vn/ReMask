@@ -1,0 +1,37 @@
+{
+  "filename": "remask_datasets.zip",
+  "sha256": "824a87636625ebf170b38225a8605f111d15f7c8d3b4c774bd95ca8f75b5ce77",
+  "bytes": 1256392384,
+  "file_count": 44432,
+  "uncompressed_bytes": 7891405901,
+  "counts": {
+    "data/SUIM/TEST/images": 110,
+    "data/SUIM/TEST/masks": 110,
+    "data/SUIM/train_val/images": 1525,
+    "data/SUIM/train_val/masks": 1525,
+    "data/UIIS/TEST/images": 691,
+    "data/UIIS/TEST/masks": 691,
+    "data/UIIS/metadata": 2,
+    "data/UIIS/train_val/images": 3937,
+    "data/UIIS/train_val/masks": 3937,
+    "data/USIS10K/USIS10K/foreground_annotations": 3,
+    "data/USIS10K/USIS10K/multi_class_annotations": 3,
+    "data/USIS10K/USIS10K/test": 1596,
+    "data/USIS10K/USIS10K/train": 7442,
+    "data/USIS10K/USIS10K/val": 1594,
+    "data/USIS10K/semantic_bg/metadata": 1,
+    "data/USIS10K/semantic_bg/test/masks": 1596,
+    "data/USIS10K/semantic_bg/train/masks": 7442,
+    "data/USIS10K/semantic_bg/val/masks": 1594,
+    "data/USIS10K/semantic_ignore/metadata": 1,
+    "data/USIS10K/semantic_ignore/test/masks": 1596,
+    "data/USIS10K/semantic_ignore/train/masks": 7442,
+    "data/USIS10K/semantic_ignore/val/masks": 1594
+  },
+  "label_formats": {
+    "SUIM": "suim_rgb",
+    "UIIS": "uiis_rgb",
+    "USIS10K": "common"
+  },
+  "checkpoint_files_included": false
+}
