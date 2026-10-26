@@ -1,0 +1,41 @@
+﻿protocol,arm,scope,priority,parent,incremental_optimizer_updates,intervention,purpose,status
+uiis_to_suim,F,core,P0,source,30000,UA25k->TC5k;UW-median,reference and diagnostic logging,planned_not_launched
+uiis_to_suim,UA-noH,core,P1,source,25000,KL-only;UW-median,Stage-A endpoint25k,planned_not_launched
+uiis_to_suim,UA-noD,core,P1,source,25000,entropy-only;UW-median,Stage-A endpoint25k,planned_not_launched
+uiis_to_suim,TC-neither,core,P1,F:A25000,5000,no temporal/no class;UW-median,paired Stage-B contrast,planned_not_launched
+uiis_to_suim,TC-Tonly,core,P1,F:A25000,5000,temporal-only;UW-median,paired Stage-B contrast,planned_not_launched
+uiis_to_suim,TC-Conly,core,P1,F:A25000,5000,class-only;UW-median,paired Stage-B contrast,planned_not_launched
+uiis_to_suim,G-generic-med,core,P0,source,30000,UA25k->TC5k;generic-median,probe replacement in BOTH stages,planned_not_launched
+uiis_to_suim,G-uw-pixel,core,P1,source,30000,UA25k->TC5k;UW-pixel,aggregation removal in BOTH stages,planned_not_launched
+uiis_to_suim,G-none,core,P1,source,30000,UA25k->TC5k;gate=1,ordinary host augmentations retained,planned_not_launched
+uiis_to_suim,S-UA-restart,core,P0,F:A25000,5000,UA with matched Stage-B reset,primary continuation control,planned_not_launched
+uiis_to_suim,S-UA-continuous,core,P0,F:A25000:full_state,5000,continue Stage A to30k,no reset;different question from restart,planned_not_launched
+uiis_to_suim,S-20k,core,P1,F:A20000:matching_prefix,10000,UA20k->TC10k;UW-median,same total30k;fixed phase hyperparameters,planned_not_launched
+uiis_to_suim,UA-neither,optional,P2,source,25000,alpha=beta=0;UW-median,complete UA2x2,planned_not_launched
+uiis_to_suim,G-generic-pixel,optional,P2,source,30000,UA25k->TC5k;generic-pixel,complete probe/aggregation2x2 training,planned_not_launched
+uiis_to_suim,G-uw-mean,optional,P2,source,30000,UA25k->TC5k;UW-region-mean,pooling operator-specific claim,planned_not_launched
+uiis_to_suim,G-confidence,optional,P2,source,30000,UA25k->TC5k;identity confidence gate,NOT no-gate,planned_not_launched
+uiis_to_suim,G-no-floor,optional,P2,source,30000,UA25k->TC5k;UW-median floor0,floor robustness only,planned_not_launched
+uiis_to_suim,S-27.5k,optional,P2,S-UA-continuous:27500,2500,UA27.5k->TC2.5k;UW-median,requires verified matching full prefix,planned_not_launched
+uiis_to_suim,D-gate-quality,diagnostic,P0,source/no-gate frozen model,0,generic/UW x pixel/mean/median,inference only;3 draws x3 severities,planned_not_launched
+uiis_to_suim,D-stage-dynamics,diagnostic,P0,F:states/causal_history,0,mismatch/rawKL/quality over time,inference logging;no extra optimizer updates,planned_not_launched
+usis10k_to_suim,F,core,P0,source,30000,UA25k->TC5k;UW-median,reference and diagnostic logging,planned_not_launched
+usis10k_to_suim,UA-noH,core,P1,source,25000,KL-only;UW-median,Stage-A endpoint25k,planned_not_launched
+usis10k_to_suim,UA-noD,core,P1,source,25000,entropy-only;UW-median,Stage-A endpoint25k,planned_not_launched
+usis10k_to_suim,TC-neither,core,P1,F:A25000,5000,no temporal/no class;UW-median,paired Stage-B contrast,planned_not_launched
+usis10k_to_suim,TC-Tonly,core,P1,F:A25000,5000,temporal-only;UW-median,paired Stage-B contrast,planned_not_launched
+usis10k_to_suim,TC-Conly,core,P1,F:A25000,5000,class-only;UW-median,paired Stage-B contrast,planned_not_launched
+usis10k_to_suim,G-generic-med,core,P0,source,30000,UA25k->TC5k;generic-median,probe replacement in BOTH stages,planned_not_launched
+usis10k_to_suim,G-uw-pixel,core,P1,source,30000,UA25k->TC5k;UW-pixel,aggregation removal in BOTH stages,planned_not_launched
+usis10k_to_suim,G-none,core,P1,source,30000,UA25k->TC5k;gate=1,ordinary host augmentations retained,planned_not_launched
+usis10k_to_suim,S-UA-restart,core,P0,F:A25000,5000,UA with matched Stage-B reset,primary continuation control,planned_not_launched
+usis10k_to_suim,S-UA-continuous,core,P0,F:A25000:full_state,5000,continue Stage A to30k,no reset;different question from restart,planned_not_launched
+usis10k_to_suim,S-20k,core,P1,F:A20000:matching_prefix,10000,UA20k->TC10k;UW-median,same total30k;fixed phase hyperparameters,planned_not_launched
+usis10k_to_suim,UA-neither,optional,P2,source,25000,alpha=beta=0;UW-median,complete UA2x2,planned_not_launched
+usis10k_to_suim,G-generic-pixel,optional,P2,source,30000,UA25k->TC5k;generic-pixel,complete probe/aggregation2x2 training,planned_not_launched
+usis10k_to_suim,G-uw-mean,optional,P2,source,30000,UA25k->TC5k;UW-region-mean,pooling operator-specific claim,planned_not_launched
+usis10k_to_suim,G-confidence,optional,P2,source,30000,UA25k->TC5k;identity confidence gate,NOT no-gate,planned_not_launched
+usis10k_to_suim,G-no-floor,optional,P2,source,30000,UA25k->TC5k;UW-median floor0,floor robustness only,planned_not_launched
+usis10k_to_suim,S-27.5k,optional,P2,S-UA-continuous:27500,2500,UA27.5k->TC2.5k;UW-median,requires verified matching full prefix,planned_not_launched
+usis10k_to_suim,D-gate-quality,diagnostic,P0,source/no-gate frozen model,0,generic/UW x pixel/mean/median,inference only;3 draws x3 severities,planned_not_launched
+usis10k_to_suim,D-stage-dynamics,diagnostic,P0,F:states/causal_history,0,mismatch/rawKL/quality over time,inference logging;no extra optimizer updates,planned_not_launched

@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-26",
+  "unit_checks_passed": 34,
+  "experiment_recipes_smoked": 18,
+  "source_protocols": [
+    "uiis_to_suim",
+    "usis10k_to_suim"
+  ],
+  "completed_training_phase_checks": 52,
+  "native_snapshot_files_verified": 30,
+  "native_trainer_sha256": "7ec02f2b25094df0e6fc656fd8984599db9b4dfe6e962418ad6eea0035f4b86c",
+  "release_code_sha256": "ac14271da8054422ff2e6920b5e613f8ee19a71b33215d4bc81de502bac03de9",
+  "integration_mode": {
+    "device": "CPU",
+    "train_images": 8,
+    "evaluation_images": 2,
+    "reference_updates": {
+      "A": 2,
+      "B": 2
+    }
+  },
+  "verified": [
+    "native source initialization and optimizer steps",
+    "new-process full-state resume",
+    "all declared recipes and fixed update counters",
+    "UWRG retained when temporal/base reliability disabled",
+    "shared-parent branching and continuous restoration",
+    "pseudo-label refresh before pause",
+    "frozen scoring and paired report export",
+    "FP32 gradient parity for activation checkpointing",
+    "target-train masks excluded"
+  ],
+  "full_resolution_gpu_validation": false,
+  "full_30k_results": false,
+  "colab_runtime_executed": false
+}

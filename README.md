@@ -74,6 +74,8 @@ Stable-ST retains the author trainer and NFD. SeCoV2 is a DeepLab PSA/SCC port w
 
 ## ReMask reference
 
+For native-trainer component ablations, generic/UW probes and stage-transition experiments, use the [experiment runner and Colab notebook](experiments/rebuttal/README.md). These include checkpoint-safe continuation and all requested controls.
+
 Set dataset paths in `configs/uiis_to_suim.yaml`, `configs/usis10k_to_suim.yaml` or `configs/gta5_to_cityscapes.yaml`, then use the source checkpoint downloaded above:
 
 ```bash

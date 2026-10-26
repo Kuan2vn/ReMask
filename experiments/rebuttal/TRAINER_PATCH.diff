@@ -1,0 +1,121 @@
+--- original/train_ReMask_special.py
++++ native/trainer.py
+@@ -1398,7 +1398,6 @@
+     use_uwrg = bool(
+         uwrg_options is not None
+         and uwrg_options.use_uwrg
+-        and _cfg_get(cfg.REMASK, "USE_RELIABILITY", True)
+     )
+     uwrg_composition = (
+         uwrg_options.uwrg_composition
+@@ -1560,11 +1559,13 @@
+             },
+             "rng_state": _capture_rng_state(),
+         }
+-        torch.save(payload, filename)
++        EXPERIMENT.save(payload, filename)
+ 
+     if resume_training_state and checkpoint is not None and "rng_state" in checkpoint:
+         _restore_rng_state(checkpoint["rng_state"], logger)
+         logger.info("Restored RNG state from checkpoint")
++
++    EXPERIMENT.initial(locals())
+ 
+     while (
+         iteration < cfg.SOLVER.STOP_ITER
+@@ -1575,6 +1576,7 @@
+             target_loader.sampler.set_epoch(iteration)
+ 
+         for tgt_input, _, names, tgt_trans_param, tgt_img_full, mix_label in target_loader:
++            EXPERIMENT.batch_start()
+             data_time = time.time() - end
+ 
+             current_lr = adjust_learning_rate(
+@@ -2008,6 +2010,7 @@
+                 teacher_cls_ema.step()
+             teacher_fea.eval()
+             teacher_cls.eval()
++            EXPERIMENT.observe(locals())
+             _update_mixup_sampling(cfg, target_data, running_conf)
+ 
+             meters.update(
+@@ -2141,60 +2144,12 @@
+                 )
+ 
+             checkpoint_due = (
+-                iteration == cfg.SOLVER.MAX_ITER
+-                or (iteration + 1) % cfg.SOLVER.CHECKPOINT_PERIOD == 0
++                iteration == cfg.SOLVER.STOP_ITER
++                or iteration % cfg.SOLVER.CHECKPOINT_PERIOD == 0
+             )
+             if checkpoint_due:
+                 filename = os.path.join(cfg.OUTPUT_DIR, "remask_model_iter{:06d}.pth".format(iteration))
+-                _save_remask_checkpoint(filename)
+-                val_miou = run_test(cfg, teacher_fea, teacher_cls, local_rank, distributed)
+-                if val_miou is not None:
+-                    val_miou = float(val_miou)
+-                    if val_miou > early_stop_best_miou + early_stop_min_delta:
+-                        early_stop_best_miou = val_miou
+-                        early_stop_best_iter = iteration
+-                        logger.info(
+-                            "Early-stop monitor: new best mIoU {:.4f} at iter {}".format(
+-                                early_stop_best_miou,
+-                                early_stop_best_iter,
+-                            )
+-                        )
+-
+-                    if use_early_stop_reference and iteration >= early_stop_start_iter:
+-                        if val_miou > early_stop_window_best_miou + early_stop_min_delta:
+-                            early_stop_window_best_miou = val_miou
+-                            early_stop_window_best_iter = iteration
+-                        logger.info(
+-                            "Early-stop monitor: mIoU {:.4f}, global best {:.4f} "
+-                            "at iter {}, post-start best {:.4f} at iter {}, target {:.4f}".format(
+-                                val_miou,
+-                                early_stop_best_miou,
+-                                early_stop_best_iter,
+-                                early_stop_window_best_miou,
+-                                early_stop_window_best_iter,
+-                                early_stop_min_miou,
+-                            )
+-                        )
+-
+-                    if (
+-                        use_early_stop_reference
+-                        and iteration >= early_stop_start_iter + early_stop_patience_iters
+-                        and early_stop_window_best_miou
+-                        < early_stop_min_miou + early_stop_min_delta
+-                    ):
+-                        logger.info(
+-                            "Early stopping at iter {}: post-start best mIoU {:.4f} "
+-                            "at iter {} did not reach target {:.4f} after "
+-                            "start_iter={} + patience_iters={}.".format(
+-                                iteration,
+-                                early_stop_window_best_miou,
+-                                early_stop_window_best_iter,
+-                                early_stop_min_miou,
+-                                early_stop_start_iter,
+-                                early_stop_patience_iters,
+-                            )
+-                        )
+-                        early_stop_triggered = True
++                EXPERIMENT.evaluate(iteration, locals())
+ 
+             if early_stop_triggered:
+                 break
+@@ -2226,10 +2181,12 @@
+                     )
+                 if checkpoint_due:
+                     _save_remask_checkpoint(filename)
+-                    logger.info(
+-                        "Updated checkpoint after TCR refresh: {}".format(filename)
+-                    )
++                    EXPERIMENT.boundary(iteration, filename, locals())
+                 break
++
++            if checkpoint_due:
++                _save_remask_checkpoint(filename)
++                EXPERIMENT.boundary(iteration, filename, locals())
+ 
+             if iteration >= cfg.SOLVER.STOP_ITER or iteration >= cfg.SOLVER.MAX_ITER:
+                 break

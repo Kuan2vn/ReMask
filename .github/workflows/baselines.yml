@@ -1,9 +1,9 @@
 name: Baseline checks
 on:
   push:
-    paths: ['baselines/**', 'requirements.txt', '.github/workflows/baselines.yml']
+    paths: ['baselines/**', 'experiments/rebuttal/**', 'requirements.txt', '.github/workflows/baselines.yml']
   pull_request:
-    paths: ['baselines/**', 'requirements.txt', '.github/workflows/baselines.yml']
+    paths: ['baselines/**', 'experiments/rebuttal/**', 'requirements.txt', '.github/workflows/baselines.yml']
 permissions:
   contents: read
 jobs:
@@ -20,3 +20,5 @@ jobs:
       - run: pip check
       - run: python baselines/run.py --help
       - run: python -m unittest discover -s baselines/underwater/tests -v
+      - run: python -m unittest discover -s experiments/rebuttal/tests -v
+      - run: python experiments/rebuttal/run.py --suite all --protocol all --plan
