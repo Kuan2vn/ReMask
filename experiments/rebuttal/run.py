@@ -14,7 +14,7 @@ HERE=Path(__file__).resolve().parent
 REPO=HERE.parents[1]
 sys.path.insert(0,str(REPO/'baselines/underwater'))
 from recipes import ARMS,PROTOCOLS,ordered_arms,phases
-from util import atomic_json,copy_banks,digest,read_json,tree_hash,verified_pointer
+from util import atomic_json,copy_banks,digest,read_json,tree_hash,verified_pointer,warm_bank_root
 
 
 def dataset_signature(data):
@@ -71,6 +71,8 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
         if any(parent_signature[k]!=signature[k] for k in ('source_sha256','dataset_sha256','code_sha256','diagnostic')):
             raise ValueError('Parent checkpoint does not match source/data/code/mode')
         copy_banks(banks,output)
+    elif not args.smoke:
+        copy_banks(warm_bank_root(protocol),output)
     seconds=max(0.,deadline-time.monotonic())
     if seconds<=0: return False
     task=dict(arm=arm,protocol=protocol,phase=p,source=source,signature=signature,output=str(output.resolve()),

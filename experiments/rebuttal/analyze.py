@@ -169,8 +169,9 @@ def main():
                                     globals_copy['ndimage']=Mean()
                                     function=types.FunctionType(trainer._segmentwise_median_stability.__code__,globals_copy)
                                     stability,_=function(stability,pseudo,255,4,8)
-                                gate=.8+.2*stability
-                                for context,score in [('gate',gate),('base_x_gate',base*gate.pow(.1 if protocol==PROTOCOLS[0] else 1.5))]:
+                                floor=.8 if protocol==PROTOCOLS[0] else .6
+                                gate=floor+(1.-floor)*stability
+                                for context,score in [('gate',gate),('base_x_gate',base*gate.pow(1.))]:
                                     score=F.interpolate(score,y.shape,mode='nearest')[0,0,::stride,::stride].cpu().numpy()
                                     result=quality(score[valid],correct[valid])
                                     if result is None:continue

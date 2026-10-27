@@ -1,0 +1,18 @@
+{
+  "uiis_to_suim": {
+    "archive": "assets/warm_banks/uiis_to_suim_dtst_warm.tar.gz",
+    "archive_sha256": "d22b24b7c5b677579b44f62dc050d963f968bfd8d547f26423d58c3874674f52",
+    "banks_sha256": "363d8d0da2bf3367fb08feccd3384b18b1c4b564671f5dd9fb6445d365a66cdd",
+    "ctr_p_sha256": "fa4a0bb84cdb28db826a74360a95c6e4d6b5946316992c9ddf1658ee8e774a3a",
+    "ctr_o_p_sha256": "997a77ee316ddd971626ed54758afab2a35050113479d6f1c2081f8b02bcd1f6",
+    "historical_origin": "results_uiis_to_suim/dtst_warm_uiis_to_suim_8c_src18k"
+  },
+  "usis10k_to_suim": {
+    "archive": "assets/warm_banks/usis10k_to_suim_dtst_warm.tar.gz",
+    "archive_sha256": "314bc520915c2ec4198b328929027c4392bd313ab40676abdd5b7343302d0f1b",
+    "banks_sha256": "4f7aa399b635a04bd17dbc883cbff64515b340cfc76022ddf2ea4760e5af78ca",
+    "ctr_p_sha256": "b47df277f65b65e186551a1c36c64e095d19a09ee8c0585d6cbf5b2b1b01db5e",
+    "ctr_o_p_sha256": "ce77427d39faf269b568057c06095b7276c56e923655f315bbea7bd8efbeb729",
+    "historical_origin": "results_usis10k_bg_to_suim_8c/usis_bg_src_best/dtst_warm_usis10k_bg_to_suim_8c"
+  }
+}

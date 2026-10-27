@@ -62,7 +62,7 @@ Resource columns describe incremental phase costs. To compare complete pipelines
 
 ## Protocol
 
-Fresh reference:25k Stage A +5k Stage B, batch4, seed1, evaluation500. Stage-A LR2.5e-4 with30k polynomial horizon; Stage-B LR1e-4 with20k horizon. Probe warmups are fixed5000/1000 updates. Stage A retains the archived host's prototype auxiliary loss(weight0.1); Stage B uses weighted CE without that auxiliary term. These are newly declared matched experiments, not numerical reproductions of the paper's headline scores.
+Fresh reference:25k Stage A +5k Stage B, batch4, seed1, evaluation500, initialized with the verified DTST warm candidate banks (`assets/warm_banks`). Stage-A LR2.5e-4 with30k polynomial horizon; Stage-B LR1e-4 with20k horizon. Probe warmups are fixed6000/4000 updates (`0.2 * horizon`). Stage A retains the archived host's prototype auxiliary loss(weight0.1); Stage B uses weighted CE without that auxiliary term.
 
 TC branches start from the same Stage-A teacher checkpoint and use the same reset/LR policy. UA-continuous restores the full student/teacher/optimizer state. Each fork receives its own pseudo-label-bank copy. Generic/UW replacement changes the probe in **both stages**. No-gate sets the factor to1; identity probing retains confidence weighting.
 

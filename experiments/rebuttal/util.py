@@ -2,7 +2,23 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import tarfile
+import tempfile
 import time
+import uuid
+
+WARM_BANKS = {
+    'uiis_to_suim': {
+        'archive': 'assets/warm_banks/uiis_to_suim_dtst_warm.tar.gz',
+        'archive_sha256': 'd22b24b7c5b677579b44f62dc050d963f968bfd8d547f26423d58c3874674f52',
+        'banks_sha256': '363d8d0da2bf3367fb08feccd3384b18b1c4b564671f5dd9fb6445d365a66cdd',
+    },
+    'usis10k_to_suim': {
+        'archive': 'assets/warm_banks/usis10k_to_suim_dtst_warm.tar.gz',
+        'archive_sha256': '314bc520915c2ec4198b328929027c4392bd313ab40676abdd5b7343302d0f1b',
+        'banks_sha256': '4f7aa399b635a04bd17dbc883cbff64515b340cfc76022ddf2ea4760e5af78ca',
+    },
+}
 
 
 def digest(path):
@@ -45,6 +61,41 @@ def copy_banks(source, destination):
             shutil.copytree(src, dst, dirs_exist_ok=True)
         else:
             shutil.copy2(src, dst)
+
+
+def warm_bank_root(protocol, repo=None):
+    if protocol not in WARM_BANKS:
+        raise ValueError(f'Unknown warm bank protocol: {protocol}')
+    spec = WARM_BANKS[protocol]
+    here = Path(repo)/'experiments/rebuttal' if repo else Path(__file__).resolve().parent
+    archive = (here/spec['archive']).resolve()
+    if not archive.is_file() or digest(archive) != spec['archive_sha256']:
+        raise ValueError(f'Warm candidate bank archive missing or corrupted: {archive}')
+    cache = Path(tempfile.gettempdir()).resolve()/'remask-warm-banks-v1'/protocol/spec['banks_sha256']
+    marker = cache/'WARM_BANKS_VERIFIED.json'
+    if marker.is_file() and all((cache/name).exists() for name in ('CTR', 'CTR_O', 'CTR.p', 'CTR_O.p')):
+        return cache
+    staging = cache.parent/f'.partial-{uuid.uuid4().hex}'
+    staging.mkdir(parents=True, exist_ok=True)
+    try:
+        with tarfile.open(archive, 'r:gz') as tar:
+            for member in tar.getmembers():
+                rel = Path(member.name)
+                if (rel.is_absolute() or '..' in rel.parts or member.issym() or member.islnk()
+                        or rel.parts[0] not in ('CTR', 'CTR_O', 'CTR.p', 'CTR_O.p')):
+                    raise ValueError(f'Unsafe warm bank member: {member.name}')
+            tar.extractall(staging, filter='data')
+        if bank_hash(staging) != spec['banks_sha256']:
+            raise ValueError(f'Unpacked warm candidate bank hash mismatch: {protocol}')
+        atomic_json(staging/'WARM_BANKS_VERIFIED.json', dict(protocol=protocol, **spec))
+        if cache.exists():
+            shutil.rmtree(cache)
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        staging.replace(cache)
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+    return cache
 
 
 def bank_hash(root):

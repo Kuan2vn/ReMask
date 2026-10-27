@@ -14,7 +14,7 @@ sys.path.insert(0,str(HERE))
 sys.path.insert(0,str(HERE/'native'))
 from recipes import ARMS,CORE,PROTOCOLS,ordered_arms,phases
 from metrics import quality,overlap,boundary_counts
-from util import atomic_json,bank_hash,copy_banks,digest,verified_pointer
+from util import WARM_BANKS,atomic_json,bank_hash,copy_banks,digest,verified_pointer,warm_bank_root
 from probes import checkpoint_residual_blocks
 import trainer
 torch.set_num_threads(2)
@@ -132,6 +132,15 @@ class Experiments(unittest.TestCase):
                 self.assertFalse(cell.get('outputs'))
                 self.assertIsNone(cell['execution_count'])
                 compile(''.join(cell['source']),'colab-cell','exec')
+
+    def test_warm_bank_archives_exist_and_match_hashes(self):
+        for protocol in PROTOCOLS:
+            spec=WARM_BANKS[protocol]
+            archive=HERE/spec['archive']
+            self.assertTrue(archive.is_file(),protocol)
+            self.assertEqual(digest(archive),spec['archive_sha256'],protocol)
+            unpacked=warm_bank_root(protocol)
+            self.assertEqual(bank_hash(unpacked),spec['banks_sha256'],protocol)
 
 
 if __name__=='__main__':unittest.main()
