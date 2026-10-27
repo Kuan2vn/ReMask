@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 import pickle
 import shutil
@@ -32,6 +33,16 @@ WARM_BANKS = {
         'generator': 'train_DTST.py (configs/deeplabv2_r101_dtst_SUIM.yaml; TCR.TOPK_CANDIDATE=0.5; TCR.UPDATE_FREQUENCY=6000; METAPL.OPEN=False)',
         'generator_steps': 20000,
         'historical_origin': 'results_usis10k_bg_to_suim_8c/usis_bg_src_best/dtst_warm_usis10k_bg_to_suim_8c',
+    },
+}
+
+PAPER_STAGE_A_CHECKPOINTS = {
+    'uiis_to_suim': {
+        'filename': 'remask_model_iter024999.pth',
+        'sha256': 'd52a8b11055de408e8adabc5870f3ae25a89fc3e99007c872d4abaeafc0c6c3e',
+        'step': 25000,
+        'gdrive_id': '1as2OJ5h8GN2zbjdMl6QSn7aY39RQ7E6p',
+        'historical_origin': 'results_sensitivity/remask_special_uwrg_sensitivity_24283/uiis_to_suim/strength020/remask_model_iter024999.pth',
     },
 }
 
@@ -149,6 +160,96 @@ def seed_warm_banks(protocol, destination, source_sha256=None, view=None, smoke=
                 pickle.dump((filtered_l2f, filtered_f2l), stream)
         copy_fn(staged, destination)
     return root
+
+
+def paper_stage_a_checkpoint(protocol, repo=None):
+    spec = PAPER_STAGE_A_CHECKPOINTS.get(protocol)
+    if spec is None:
+        return None
+    repo_root = Path(repo) if repo else Path(__file__).resolve().parents[2]
+    env_ckpt = os.environ.get('REMASK_PAPER_STAGE_A_CKPT')
+    candidates = ([Path(env_ckpt)] if env_ckpt else []) + [
+        repo_root/spec['filename'],
+        Path('/content/ReMask')/spec['filename'],
+        Path('/content/drive/MyDrive/@Remask')/spec['filename'],
+    ]
+    for path in candidates:
+        if path.is_file():
+            if digest(path) != spec['sha256']:
+                raise ValueError(f'Paper Stage-A checkpoint hash mismatch: {path}')
+            return path.resolve()
+    return None
+
+
+def ensure_paper_stage_a_anchor(protocol, phase_out, signature, repo=None, mark_complete=False):
+    spec = PAPER_STAGE_A_CHECKPOINTS.get(protocol)
+    if spec is None or signature.get('diagnostic'):
+        return False
+    ckpt_src = paper_stage_a_checkpoint(protocol, repo=repo)
+    if ckpt_src is None:
+        return False
+    phase_out = Path(phase_out).resolve()
+    phase_out.mkdir(parents=True, exist_ok=True)
+    config_path = phase_out/'PHASE_CONFIG.json'
+    if config_path.exists() and read_json(config_path) != signature:
+        return False
+    atomic_json(config_path, signature)
+    target_ckpt = phase_out/spec['filename']
+    if not target_ckpt.is_file() or digest(target_ckpt) != spec['sha256']:
+        tmp_ckpt = phase_out/(spec['filename'] + '.partial-' + uuid.uuid4().hex)
+        shutil.copy2(ckpt_src, tmp_ckpt)
+        if digest(tmp_ckpt) != spec['sha256']:
+            tmp_ckpt.unlink(missing_ok=True)
+            raise ValueError(f'Copied paper Stage-A checkpoint failed hash check: {target_ckpt}')
+        tmp_ckpt.replace(target_ckpt)
+    warm_root = warm_bank_root(protocol, repo=repo)
+    banks_sha = WARM_BANKS[protocol]['banks_sha256']
+    try:
+        from local_bank_io import cache_root
+        verified_cache = cache_root()/'verified'/banks_sha
+        if not verified_cache.exists():
+            staging_cache = verified_cache.with_name(banks_sha + '.partial-' + uuid.uuid4().hex)
+            shutil.copytree(warm_root, staging_cache, dirs_exist_ok=True)
+            verified_cache.parent.mkdir(parents=True, exist_ok=True)
+            staging_cache.replace(verified_cache)
+    except Exception:
+        pass
+    banks_dir = phase_out/'banks'/'000000'
+    if not (banks_dir/'BANKS.json').is_file() or read_json(banks_dir/'BANKS.json').get('sha256') != banks_sha:
+        staging_banks = banks_dir.with_name('000000.partial-' + uuid.uuid4().hex)
+        staging_banks.mkdir(parents=True, exist_ok=True)
+        copy_banks(warm_root, staging_banks)
+        atomic_json(staging_banks/'BANKS.json', dict(sha256=banks_sha))
+        banks_dir.parent.mkdir(parents=True, exist_ok=True)
+        if banks_dir.exists():
+            shutil.rmtree(banks_dir)
+        staging_banks.replace(banks_dir)
+    pointer = dict(
+        iteration=spec['step'],
+        checkpoint=target_ckpt.name,
+        sha256=spec['sha256'],
+        banks='banks/000000',
+        banks_sha256=banks_sha,
+        signature=signature,
+        historical_origin=spec['historical_origin'],
+        resources=dict(wall_seconds=0., training_seconds=0., evaluation_seconds=0.,
+                       candidate_seconds=0., checkpoint_seconds=0., incremental_optimizer_updates=0,
+                       segments=[], imported_paper_stage_a=True),
+    )
+    snapshots = phase_out/'snapshots'
+    snapshots.mkdir(exist_ok=True)
+    atomic_json(snapshots/f"{spec['step']:06d}.json", pointer)
+    if mark_complete and not (phase_out/'CURRENT.json').exists():
+        atomic_json(phase_out/'CURRENT.json', pointer)
+        atomic_json(phase_out/'RUN_STATE.json', dict(
+            status='complete', local_updates=spec['step'], global_updates=spec['step'],
+            checkpoint_verified=True, full_state=True, stopping_rule='fixed_budget',
+            diagnostic=False, imported_paper_stage_a=True))
+        atomic_json(phase_out/'complete.json', dict(
+            local_updates=spec['step'], signature=signature,
+            imported_paper_stage_a=True, historical_origin=spec['historical_origin']))
+        print(f'[PAPER STAGE-A ANCHOR] Seeded {protocol}/F/A@{spec["step"]} from {ckpt_src}', flush=True)
+    return True
 
 
 def bank_hash(root):

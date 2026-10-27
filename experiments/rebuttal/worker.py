@@ -58,13 +58,6 @@ def main():
     if task['activation_checkpointing']: checkpoint_residual_blocks()
     install_probe(trainer,p,task['calibration']['generic_amplitude'])
     control=Control(task,trainer); trainer.EXPERIMENT=control
-    raw_probe=trainer._underwater_reliability_perturb
-    def isolated_probe(x,strength):
-        devices=[x.device] if x.is_cuda else []
-        with torch.random.fork_rng(devices=devices):
-            torch.manual_seed(task['seed']*1000003+p['offset']+control.seen_step)
-            return raw_probe(x,strength)
-    trainer._underwater_reliability_perturb=isolated_probe
     original_candidate=trainer.run_candidate
     trainer.run_candidate=lambda *a,**kw:control.candidate(original_candidate,*a,**kw)
     if task['smoke']:
@@ -75,7 +68,8 @@ def main():
             loader=torch.utils.data.DataLoader(data,batch_size=4,shuffle=True,num_workers=0,drop_last=True)
             return data,loader
         trainer._build_target_loader=build
-    options=SimpleNamespace(resume_iteration=-1 if task.get('resume_own') or p['full_resume'] else 0,
+    resume_iter=-1 if task.get('resume_own') else (p['parent_step'] if p['full_resume'] else 0)
+    options=SimpleNamespace(resume_iteration=resume_iter,
         early_stop_min_miou=-1.,early_stop_start_iter=0,early_stop_patience_iters=0,early_stop_min_delta=0.,
         use_uwrg=p['probe']!='none',uwrg_mode='pixel' if p['aggregation']=='pixel' else 'segment',
         uwrg_composition='weighted_product',uwrg_floor=p['floor'],uwrg_lambda=p['exponent'],

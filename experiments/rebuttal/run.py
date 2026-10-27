@@ -14,7 +14,7 @@ HERE=Path(__file__).resolve().parent
 REPO=HERE.parents[1]
 sys.path.insert(0,str(REPO/'baselines/underwater'))
 from recipes import ARMS,PROTOCOLS,ordered_arms,phases
-from util import atomic_json,copy_banks,digest,read_json,seed_warm_banks,tree_hash,verified_pointer
+from util import atomic_json,copy_banks,digest,ensure_paper_stage_a_anchor,read_json,seed_warm_banks,tree_hash,verified_pointer
 
 
 def dataset_signature(data):
@@ -45,6 +45,8 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
                    panel_images=args.panel_images,quality_stride=args.quality_stride,smoke_refresh=args.smoke_refresh,
                    save_pixel_diagnostics=args.save_pixel_diagnostics,
                    device=args.device)
+    if arm=='F' and p['phase']=='A' and not args.smoke and os.environ.get('REMASK_SKIP_PAPER_STAGE_A')!='1':
+        ensure_paper_stage_a_anchor(protocol,output,signature,repo=REPO,mark_complete=True)
     config=output/'PHASE_CONFIG.json'
     if config.exists() and read_json(config)!=signature:
         raise ValueError(f'Output belongs to a different recipe/code/data: {output}; choose a new --output')
@@ -66,13 +68,17 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
         copy_banks(banks,output)
     elif p['parent']:
         parent=base/p['parent']/'A'
+        if p['parent']=='F' and p['parent_step']==25000 and not args.smoke and not (parent/'snapshots/025000.json').exists():
+            f_a_sig=dict(signature,arm='F',phase=phases('F',protocol,args.seed,args.smoke)[0])
+            ensure_paper_stage_a_anchor(protocol,parent,f_a_sig,repo=REPO,mark_complete=False)
         pointer,checkpoint,banks=verified_pointer(parent,f'snapshots/{p["parent_step"]:06d}.json')
         parent_signature=pointer['signature']
         if any(parent_signature[k]!=signature[k] for k in ('source_sha256','dataset_sha256','code_sha256','diagnostic')):
             raise ValueError('Parent checkpoint does not match source/data/code/mode')
-        copy_banks(banks,output)
+        # Match original train_remask_special_temporal_cb_from_best.slurm: initialize Stage-B/P1 banks from WARM_DIR.
+        seed_warm_banks(protocol,output,source['sha256'],view,args.smoke,repo=REPO,copy_fn=copy_banks)
     else:
-        seed_warm_banks(protocol,output,source['sha256'],view,args.smoke,copy_fn=copy_banks)
+        seed_warm_banks(protocol,output,source['sha256'],view,args.smoke,repo=REPO,copy_fn=copy_banks)
     seconds=max(0.,deadline-time.monotonic())
     if seconds<=0: return False
     task=dict(arm=arm,protocol=protocol,phase=p,source=source,signature=signature,output=str(output.resolve()),

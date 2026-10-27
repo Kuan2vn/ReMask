@@ -57,7 +57,7 @@ def install(run, repo=None):
         if (folder/'CURRENT.json').exists():
             print('[RESUME] Saved own-state pointer found; full verification follows.', flush=True)
         elif recipe['parent']:
-            print(f'[FORK] Requires {recipe["parent"]}/A@{recipe["parent_step"]}.', flush=True)
+            print(f'[FORK] Requires {recipe["parent"]}/A@{recipe["parent_step"]}; initializes working bank from verified DTST warm bank.', flush=True)
         else:
             print('[FRESH] No own-state pointer; native runner will initialize from source with verified DTST warm candidate bank.', flush=True)
         return original_phase(args, arm, protocol, recipe, *rest)
@@ -90,6 +90,7 @@ def main():
     import run
     from recipes import ordered_arms, phases, PROTOCOLS
     from local_bank_io import install_coordinator
+    from util import paper_stage_a_checkpoint
     install_coordinator(run)
     requested = remaining[remaining.index('--arm')+1] if '--arm' in remaining else None
     suite = remaining[remaining.index('--suite')+1] if '--suite' in remaining else 'priority'
@@ -117,6 +118,10 @@ def main():
                                 from anchor_import import import_anchor
                                 traced(f'import immutable {parent}/A@{recipe["parent_step"]}', import_anchor)(
                                     source, snapshot.parent.parent, recipe['parent_step'], protocol, seed, mode=='smoke')
+                    if not snapshot.exists() and parent == 'F' and recipe['parent_step'] == 25000 and mode != 'smoke':
+                        if paper_stage_a_checkpoint(protocol, repo=args.repo) is not None:
+                            print(f'[PAPER STAGE-A READY] Will seed {protocol}/F/A@25000 from remask_model_iter024999.pth', flush=True)
+                            continue
                     if not snapshot.exists():
                         missing.append(snapshot)
         if missing:
