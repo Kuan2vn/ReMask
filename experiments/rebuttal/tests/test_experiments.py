@@ -1,7 +1,9 @@
 """Checks for contrasts, ranking ties, gradient parity, GT exclusion and resume integrity."""
 import copy
 import json
+import os
 from pathlib import Path
+import pickle
 import sys
 import tempfile
 import unittest
@@ -10,12 +12,14 @@ import torch
 from PIL import Image
 
 HERE=Path(__file__).resolve().parents[1]
+REPO=HERE.parents[1]
 sys.path.insert(0,str(HERE))
 sys.path.insert(0,str(HERE/'native'))
+sys.path.append(str(REPO/'baselines/underwater'))
 from recipes import ARMS,CORE,PROTOCOLS,ordered_arms,phases
 from metrics import quality,overlap,boundary_counts
-from util import WARM_BANKS,atomic_json,bank_hash,copy_banks,digest,verified_pointer,warm_bank_root
-from probes import checkpoint_residual_blocks
+from util import WARM_BANKS,atomic_json,bank_hash,copy_banks,digest,read_json,seed_warm_banks,verified_pointer,warm_bank_root
+from probes import checkpoint_residual_blocks,generic_probe,install_probe
 import trainer
 torch.set_num_threads(2)
 
@@ -133,14 +137,188 @@ class Experiments(unittest.TestCase):
                 self.assertIsNone(cell['execution_count'])
                 compile(''.join(cell['source']),'colab-cell','exec')
 
-    def test_warm_bank_archives_exist_and_match_hashes(self):
+    def test_warm_bank_archives_provenance_and_cache_reverification(self):
+        import importlib.util
+        spec_mod=importlib.util.spec_from_file_location('ub_assets',REPO/'baselines/underwater/underwater_baselines/assets.py')
+        ub_assets=importlib.util.module_from_spec(spec_mod)
+        spec_mod.loader.exec_module(ub_assets)
+        SOURCES=ub_assets.SOURCES
+        manifest=read_json(HERE/'assets/warm_banks/WARM_BANKS.json')
+        bundle=read_json(HERE/'dataset_bundle.json')
+        self.assertEqual(manifest,WARM_BANKS)
         for protocol in PROTOCOLS:
             spec=WARM_BANKS[protocol]
+            self.assertEqual(spec['source_sha256'],SOURCES[protocol]['sha256'],protocol)
+            self.assertEqual(spec['dataset_bundle_sha256'],bundle['sha256'],protocol)
             archive=HERE/spec['archive']
             self.assertTrue(archive.is_file(),protocol)
             self.assertEqual(digest(archive),spec['archive_sha256'],protocol)
             unpacked=warm_bank_root(protocol)
             self.assertEqual(bank_hash(unpacked),spec['banks_sha256'],protocol)
+            self.assertEqual(digest(unpacked/'CTR.p'),spec['ctr_p_sha256'],protocol)
+            self.assertEqual(digest(unpacked/'CTR_O.p'),spec['ctr_o_p_sha256'],protocol)
+            with self.assertRaisesRegex(ValueError,'source SHA mismatch'):
+                seed_warm_banks(protocol,unpacked,'0'*64)
+            # Tamper with a file inside the unpacked cache and verify warm_bank_root self-heals.
+            sample_png=next((unpacked/'CTR').glob('*.png'))
+            original_bytes=sample_png.read_bytes()
+            sample_png.write_bytes(b'corrupted-mask-bytes')
+            self.assertNotEqual(bank_hash(unpacked),spec['banks_sha256'])
+            repaired=warm_bank_root(protocol)
+            self.assertEqual(bank_hash(repaired),spec['banks_sha256'],protocol)
+            self.assertEqual((repaired/'CTR'/sample_png.name).read_bytes(),original_bytes)
+
+    def test_local_bank_io_boundary_and_checked_hash_have_no_scope_error(self):
+        import control as control_module
+        from control import Control
+        import local_bank_io
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path=Path(tmp)
+            cache_dir=tmp_path/'cache'
+            out_dir=tmp_path/'phase_out'
+            out_dir.mkdir(parents=True)
+            old_env=os.environ.get('REMASK_BANK_CACHE')
+            orig_init=Control.__init__
+            orig_copy=control_module.copy_banks
+            orig_hash=control_module.bank_hash
+            orig_ens=trainer._ensure_remask_candidates
+            orig_cand=trainer.run_candidate
+            orig_gen=trainer.gen_lb_info
+            orig_build=trainer._build_target_loader
+            try:
+                os.environ['REMASK_BANK_CACHE']=str(cache_dir)
+                working=local_bank_io.prepare_phase(out_dir,fresh=True)
+                for folder in ('CTR','CTR_O'):
+                    (working/folder).mkdir(parents=True,exist_ok=True)
+                    (working/folder/'sample.png').write_bytes(b'png-bytes')
+                for idx_name in ('CTR.p','CTR_O.p'):
+                    (working/idx_name).write_bytes(b'pickle-bytes')
+                expected_hash=orig_hash(working)
+                local_bank_io.install_worker(Control,control_module)
+                task=dict(phase=phases('F',PROTOCOLS[0],smoke=True)[0],output=str(out_dir),device='cpu',
+                          seconds=60.,smoke=True,signature=dict(test=True),
+                          source=dict(sha256=WARM_BANKS[PROTOCOLS[0]]['source_sha256']),
+                          activation_checkpointing=False,evaluation_size=[32,32],panel_images=2,quality_stride=2)
+                ctrl=Control(task,trainer)
+                ctrl.segments_init=ctrl.resources.setdefault('segments',[dict(start_local_updates=0)])
+                ckpt=out_dir/'model_000001.pth'
+                ckpt.write_bytes(b'checkpoint-bytes')
+                try:
+                    ctrl.boundary(1,str(ckpt),{})
+                except control_module.SessionPaused:
+                    pass
+                pointer=read_json(out_dir/'CURRENT.json')
+                self.assertEqual(pointer['banks_sha256'],expected_hash)
+                verified_cache=cache_dir/'verified'/expected_hash
+                self.assertTrue(verified_cache.is_dir())
+                self.assertEqual(orig_hash(verified_cache),expected_hash)
+            finally:
+                if old_env is None:
+                    os.environ.pop('REMASK_BANK_CACHE',None)
+                else:
+                    os.environ['REMASK_BANK_CACHE']=old_env
+                Control.__init__=orig_init
+                control_module.copy_banks=orig_copy
+                control_module.bank_hash=orig_hash
+                trainer._ensure_remask_candidates=orig_ens
+                trainer.run_candidate=orig_cand
+                trainer.gen_lb_info=orig_gen
+                trainer._build_target_loader=orig_build
+
+    def test_probe_rng_isolation_preserves_main_training_rng_stream(self):
+        x=torch.rand(2,3,16,16)
+        orig_perturb=trainer._underwater_reliability_perturb
+        orig_strength=trainer._uwrg_probe_strength
+        try:
+            for probe_name in ('underwater','generic','identity'):
+                p=phases('F' if probe_name=='underwater' else 'G-generic-med' if probe_name=='generic' else 'G-confidence',PROTOCOLS[0])[0]
+                install_probe(trainer,p,0.25)
+                raw_probe=trainer._underwater_reliability_perturb
+                seen_step=7
+                def isolated_probe(images,strength,_raw=raw_probe):
+                    devices=[images.device] if images.is_cuda else []
+                    with torch.random.fork_rng(devices=devices):
+                        torch.manual_seed(1*1000003+p['offset']+seen_step)
+                        return _raw(images,strength)
+                torch.manual_seed(42)
+                before_state=torch.get_rng_state()
+                expected_next=torch.rand(5)
+                torch.set_rng_state(before_state)
+                out1=isolated_probe(x,0.2)
+                after_probe_draw=torch.rand(5)
+                torch.testing.assert_close(expected_next,after_probe_draw,rtol=0,atol=0)
+                out2=isolated_probe(x,0.2)
+                torch.testing.assert_close(out1,out2,rtol=0,atol=0)
+        finally:
+            trainer._underwater_reliability_perturb=orig_perturb
+            trainer._uwrg_probe_strength=orig_strength
+
+    def test_warm_bank_target_loader_and_training_step_integration(self):
+        from core.configs import cfg
+        from core.datasets.dataset_path_catalog import DatasetCatalog
+        for protocol in PROTOCOLS:
+            unpacked=warm_bank_root(protocol)
+            for folder,idx_name in (('CTR','CTR.p'),('CTR_O','CTR_O.p')):
+                pngs={p.name for p in (unpacked/folder).glob('*.png')}
+                self.assertEqual(len(pngs),1525,(protocol,folder))
+                l2f,f2l=pickle.loads((unpacked/idx_name).read_bytes())
+                self.assertTrue(set(f2l.keys()).issubset(pngs),(protocol,idx_name))
+                self.assertGreater(len(f2l),1400,(protocol,idx_name))
+                self.assertTrue(set(l2f.keys()).issubset(set(range(8))),(protocol,idx_name))
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            unpacked=warm_bank_root(PROTOCOLS[0])
+            sample_names=sorted(p.stem for p in (unpacked/'CTR').glob('*.png'))[:8]
+            view=root/'SUIM/orin_data'
+            images_dir=view/'train_val/images'
+            images_dir.mkdir(parents=True)
+            for stem in sample_names:
+                with Image.open(unpacked/'CTR'/f'{stem}.png') as mask_img:
+                    w,h=mask_img.size
+                Image.new('RGB',(w,h),(60,110,150)).save(images_dir/f'{stem}.jpg')
+            out_dir=root/'phase_out'
+            out_dir.mkdir(parents=True)
+            seed_warm_banks(PROTOCOLS[0],out_dir,WARM_BANKS[PROTOCOLS[0]]['source_sha256'],view=view,smoke=True)
+            c=cfg.clone()
+            c.defrost()
+            c.OUTPUT_DIR=str(out_dir)
+            c.DATASETS.TARGET_TRAIN='suim_train'
+            c.MODEL.NUM_CLASSES=8
+            c.TCR.OPEN=True
+            c.INPUT.SOURCE_INPUT_SIZE_TRAIN=(64,48)
+            c.INPUT.TARGET_INPUT_SIZE_TRAIN=(64,48)
+            c.INPUT.INPUT_SIZE_TEST=(64,48)
+            c.INPUT.INPUT_SCALES_TRAIN=(1.,1.)
+            c.SOLVER.BATCH_SIZE=2
+            c.freeze()
+            called=[]
+            orig_cand=trainer.run_candidate
+            previous_dir=DatasetCatalog.DATASET_DIR
+            try:
+                DatasetCatalog.DATASET_DIR=str(root)
+                trainer.run_candidate=lambda *a,**kw:called.append(True)
+                trainer._ensure_remask_candidates(c,None,None,'cpu',None)
+                self.assertEqual(called,[],'Warm bank should skip initial run_candidate')
+                dataset,_=trainer._build_target_loader(c,2,False)
+                self.assertEqual(len(dataset.ids),8)
+                trans_img,trans_label,name,_,img_full,mix_label=dataset[0]
+                self.assertEqual(tuple(trans_img.shape),(3,48,64))
+                self.assertEqual(tuple(img_full.shape),(3,48,64))
+                self.assertEqual(tuple(trans_label.shape),(48,64))
+                self.assertEqual(tuple(mix_label.shape),(48,64))
+                valid=((mix_label>=0)&(mix_label<8))|(mix_label==255)
+                self.assertTrue(bool(valid.all()))
+                conv=torch.nn.Conv2d(3,8,kernel_size=1)
+                logits=conv(torch.stack([trans_img,img_full]).float())
+                targets=torch.zeros((2,48,64),dtype=torch.long)
+                loss=torch.nn.functional.cross_entropy(logits,targets,ignore_index=255)
+                loss.backward()
+                self.assertTrue(bool(torch.isfinite(loss)))
+                self.assertIsNotNone(conv.weight.grad)
+                self.assertTrue(bool(torch.isfinite(conv.weight.grad).all()))
+            finally:
+                trainer.run_candidate=orig_cand
+                DatasetCatalog.DATASET_DIR=previous_dir
 
 
 if __name__=='__main__':unittest.main()

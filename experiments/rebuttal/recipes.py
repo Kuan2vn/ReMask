@@ -49,7 +49,7 @@ def phases(arm, protocol, seed=1, smoke=False):
     if recipe.get('continuous'):
         return [dict(a, steps=total, parent='F', parent_step=a_end, full_resume=True)]
     b = dict(recipe, phase='B', steps=total-switch, horizon=4 if smoke else 20000,
-             offset=switch, lr=1e-4, warmup_steps=1 if smoke else 4000,
+             offset=switch, lr=1e-4, warmup_steps=1 if smoke else 1000,
              contrastive=0., reliability='ua' if recipe.get('late_ua') else 'tc',
              parent=recipe.get('parent', arm), parent_step=switch, full_resume=False)
     if recipe.get('only_a'):

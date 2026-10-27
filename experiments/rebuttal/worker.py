@@ -58,6 +58,13 @@ def main():
     if task['activation_checkpointing']: checkpoint_residual_blocks()
     install_probe(trainer,p,task['calibration']['generic_amplitude'])
     control=Control(task,trainer); trainer.EXPERIMENT=control
+    raw_probe=trainer._underwater_reliability_perturb
+    def isolated_probe(x,strength):
+        devices=[x.device] if x.is_cuda else []
+        with torch.random.fork_rng(devices=devices):
+            torch.manual_seed(task['seed']*1000003+p['offset']+control.seen_step)
+            return raw_probe(x,strength)
+    trainer._underwater_reliability_perturb=isolated_probe
     original_candidate=trainer.run_candidate
     trainer.run_candidate=lambda *a,**kw:control.candidate(original_candidate,*a,**kw)
     if task['smoke']:

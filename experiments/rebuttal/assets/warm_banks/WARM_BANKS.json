@@ -5,6 +5,10 @@
     "banks_sha256": "363d8d0da2bf3367fb08feccd3384b18b1c4b564671f5dd9fb6445d365a66cdd",
     "ctr_p_sha256": "fa4a0bb84cdb28db826a74360a95c6e4d6b5946316992c9ddf1658ee8e774a3a",
     "ctr_o_p_sha256": "997a77ee316ddd971626ed54758afab2a35050113479d6f1c2081f8b02bcd1f6",
+    "source_sha256": "7f9e88a4029f4797f97ade53f25cfef7c31ae528f52c9459b7c40b08cc67a747",
+    "dataset_bundle_sha256": "824a87636625ebf170b38225a8605f111d15f7c8d3b4c774bd95ca8f75b5ce77",
+    "generator": "train_DTST.py (configs/deeplabv2_r101_dtst_SUIM.yaml; TCR.TOPK_CANDIDATE=0.5; TCR.UPDATE_FREQUENCY=6000; METAPL.OPEN=False)",
+    "generator_steps": 30000,
     "historical_origin": "results_uiis_to_suim/dtst_warm_uiis_to_suim_8c_src18k"
   },
   "usis10k_to_suim": {
@@ -13,6 +17,10 @@
     "banks_sha256": "4f7aa399b635a04bd17dbc883cbff64515b340cfc76022ddf2ea4760e5af78ca",
     "ctr_p_sha256": "b47df277f65b65e186551a1c36c64e095d19a09ee8c0585d6cbf5b2b1b01db5e",
     "ctr_o_p_sha256": "ce77427d39faf269b568057c06095b7276c56e923655f315bbea7bd8efbeb729",
+    "source_sha256": "a4a5f4534a98cca90b1141d4746384bb942e7602f6a06e3fb629d07644654b12",
+    "dataset_bundle_sha256": "824a87636625ebf170b38225a8605f111d15f7c8d3b4c774bd95ca8f75b5ce77",
+    "generator": "train_DTST.py (configs/deeplabv2_r101_dtst_SUIM.yaml; TCR.TOPK_CANDIDATE=0.5; TCR.UPDATE_FREQUENCY=6000; METAPL.OPEN=False)",
+    "generator_steps": 20000,
     "historical_origin": "results_usis10k_bg_to_suim_8c/usis_bg_src_best/dtst_warm_usis10k_bg_to_suim_8c"
   }
 }
