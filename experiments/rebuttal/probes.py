@@ -23,9 +23,10 @@ def calibration(path, data, signature, strength, underwater, smoke=False):
     path=Path(path)
     if path.exists():
         record=read_json(path)
-        if record['dataset_signature']!=signature or record['underwater_strength']!=strength:
+        if record['dataset_signature']!=signature:
             raise ValueError('Calibration belongs to a different dataset/strength')
-        return record
+        if record['underwater_strength']==strength:
+            return record
     files=sorted((Path(data)/'train_val/images').glob('*.jpg'))
     rng=np.random.default_rng(1)
     selected=sorted(rng.choice(len(files),min(4 if smoke else 32,len(files)),replace=False).tolist())
@@ -67,7 +68,13 @@ def install_probe(trainer, phase, fitted_amplitude):
     original=trainer._underwater_reliability_perturb
     if phase['probe']=='generic':
         maximum=max(phase['strength'],1e-8)
-        trainer._underwater_reliability_perturb=lambda x,strength: generic_probe(x,fitted_amplitude*strength/maximum)
+        def generic_with_isolated_rng(x,strength):
+            devices=[x.device] if x.is_cuda else []
+            step=int(getattr(getattr(trainer,'EXPERIMENT',None),'seen_step',0))
+            with torch.random.fork_rng(devices=devices):
+                torch.manual_seed(int(phase.get('seed',1))*1000003+int(phase.get('offset',0))+step)
+                return generic_probe(x,fitted_amplitude*strength/maximum)
+        trainer._underwater_reliability_perturb=generic_with_isolated_rng
     elif phase['probe']=='identity':
         trainer._underwater_reliability_perturb=lambda x,strength:x
     if phase['aggregation']=='mean':

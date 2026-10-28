@@ -48,8 +48,30 @@ def phase_run(args,arm,protocol,p,source,data,data_sha,code_sha,calib,deadline):
     if arm=='F' and p['phase']=='A' and not args.smoke and os.environ.get('REMASK_SKIP_PAPER_STAGE_A')!='1':
         ensure_paper_stage_a_anchor(protocol,output,signature,repo=REPO,mark_complete=True)
     config=output/'PHASE_CONFIG.json'
-    if config.exists() and read_json(config)!=signature:
-        raise ValueError(f'Output belongs to a different recipe/code/data: {output}; choose a new --output')
+    if config.exists():
+        saved_cfg=read_json(config)
+        if saved_cfg!=signature:
+            core_keys=('arm','protocol','phase','source_sha256','dataset_sha256','diagnostic')
+            if all(saved_cfg.get(k)==signature[k] for k in core_keys):
+                atomic_json(config,signature)
+                for ptr_file in [output/'CURRENT.json',output/'complete.json',*(output/'snapshots').glob('*.json')]:
+                    if ptr_file.is_file():
+                        ptr=read_json(ptr_file)
+                        if isinstance(ptr.get('signature'),dict):
+                            ptr['signature']=signature
+                            atomic_json(ptr_file,ptr)
+            elif not (output/'complete.json').exists():
+                import shutil
+                print(f'[RECIPE UPDATED] Resetting incomplete phase {protocol}/{arm}/{p["phase"]} to match updated recipe.',flush=True)
+                shutil.rmtree(output,ignore_errors=True)
+                output.mkdir(parents=True,exist_ok=True)
+                try:
+                    from local_bank_io import prepare_phase
+                    prepare_phase(output,fresh=True)
+                except Exception:
+                    pass
+            else:
+                raise ValueError(f'Output belongs to a different recipe/code/data: {output}; choose a new --output')
     atomic_json(config,signature)
     if (output/'complete.json').exists():
         if read_json(output/'complete.json')['signature']!=signature: raise ValueError('Completion signature mismatch')
@@ -172,7 +194,7 @@ def main():
     with local_lock(args.output):
         for row in plan:
             protocol,arm=row['protocol'],row['arm']
-            strength=.2 if protocol==PROTOCOLS[0] else .35
+            strength=row['phases'][0]['strength']
             calib=calibration(args.output/'calibration'/f'{protocol}.json',data,data_sha,strength,
                               trainer._underwater_reliability_perturb,args.smoke)
             for p in row['phases']:

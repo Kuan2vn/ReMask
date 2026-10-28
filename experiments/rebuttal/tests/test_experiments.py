@@ -32,9 +32,17 @@ class Experiments(unittest.TestCase):
                 for p in phases(arm,protocol):
                     total+=p['steps']-(p['parent_step'] if p['full_resume'] else 0)
                     self.assertGreaterEqual(p['horizon'],p['steps'])
-            self.assertEqual(total,205000)
+            self.assertEqual(total,205000 if protocol==PROTOCOLS[0] else 190000)
             self.assertEqual(phases('S-20k',protocol)[0]['offset']+phases('S-20k',protocol)[0]['steps'],30000)
-            self.assertEqual(phases('S-UA-continuous',protocol)[0]['warmup_steps'],phases('F',protocol)[0]['warmup_steps'])
+            if protocol==PROTOCOLS[0]:
+                self.assertEqual(phases('S-UA-continuous',protocol)[0]['warmup_steps'],phases('F',protocol)[0]['warmup_steps'])
+            else:
+                for g_arm in ('G-generic-med','G-uw-pixel','G-none'):
+                    g_phases=phases(g_arm,protocol)
+                    self.assertEqual(len(g_phases),1)
+                    self.assertEqual(g_phases[0]['phase'],'A')
+                    for k in ('floor','exponent','strength','steps','horizon','warmup_steps','contrastive','lr'):
+                        self.assertEqual(g_phases[0][k],phases('F',protocol)[0][k],(g_arm,k))
         self.assertEqual(ordered_arms(arm='S-27.5k'),['F','S-UA-continuous','S-27.5k'])
         self.assertEqual(set(ordered_arms('all')),set(ARMS))
 

@@ -30,21 +30,25 @@ PROTOCOLS = ('uiis_to_suim', 'usis10k_to_suim')
 def phases(arm, protocol, seed=1, smoke=False):
     if arm not in ARMS or protocol not in PROTOCOLS:
         raise ValueError('Unknown arm/protocol')
+    is_uiis = protocol == PROTOCOLS[0]
     recipe = dict(probe='underwater', aggregation='median',
-                  floor=.8 if protocol == PROTOCOLS[0] else .6,
+                  floor=.8,
                   alpha=1., beta=1.,
                   temporal=True, classes=True, switch=25000, seed=seed,
-                  strength=.2 if protocol == PROTOCOLS[0] else .35,
-                  exponent=1.)
+                  strength=.2,
+                  exponent=1. if is_uiis else 1.5)
     recipe.update(deepcopy(ARMS[arm]))
     switch = recipe['switch']
     if smoke:
         switch = {20000: 1, 25000: 2, 27500: 3}[switch]
     total = 4 if smoke else 30000
     a_end = 2 if smoke else 25000
-    a = dict(recipe, phase='A', steps=a_end, horizon=4 if smoke else 30000,
-             offset=0, lr=2.5e-4, warmup_steps=1 if smoke else 6000,
-             contrastive=.1, reliability='ua', classes=False, parent=None,
+    a_horizon = (4 if smoke else 30000) if (is_uiis or recipe.get('continuous')) else (4 if smoke else 25000)
+    a_warmup = (1 if smoke else 6000) if is_uiis else (1 if smoke else 5000)
+    a_contrastive = .1 if is_uiis else 0.
+    a = dict(recipe, phase='A', steps=a_end, horizon=a_horizon,
+             offset=0, lr=2.5e-4, warmup_steps=a_warmup,
+             contrastive=a_contrastive, reliability='ua', classes=False, parent=None,
              parent_step=None, full_resume=False)
     if recipe.get('continuous'):
         return [dict(a, steps=total, parent='F', parent_step=a_end, full_resume=True)]
@@ -52,7 +56,7 @@ def phases(arm, protocol, seed=1, smoke=False):
              offset=switch, lr=1e-4, warmup_steps=1 if smoke else 4000,
              contrastive=0., reliability='ua' if recipe.get('late_ua') else 'tc',
              parent=recipe.get('parent', arm), parent_step=switch, full_resume=False)
-    if recipe.get('only_a'):
+    if recipe.get('only_a') or (not is_uiis and arm.startswith('G-')):
         return [a]
     return [b] if recipe.get('parent') else [a, b]
 
