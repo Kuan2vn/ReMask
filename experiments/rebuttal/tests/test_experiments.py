@@ -47,14 +47,15 @@ class Experiments(unittest.TestCase):
         self.assertEqual(set(ordered_arms('all')),set(ARMS))
 
     def test_tc_changes_only_declared_factors(self):
-        full=phases('F',PROTOCOLS[0])[1]
-        for arm,expected in [('TC-neither',(False,False)),('TC-Tonly',(True,False)),('TC-Conly',(False,True))]:
-            p=phases(arm,PROTOCOLS[0])[0]
-            self.assertEqual((p['temporal'],p['classes']),expected)
-            for key in ('steps','horizon','lr','warmup_steps','floor','exponent','strength','parent_step','contrastive'):
-                self.assertEqual(p[key],full[key],(arm,key))
-        self.assertFalse(phases('S-UA-restart',PROTOCOLS[0])[0]['full_resume'])
-        self.assertTrue(phases('S-UA-continuous',PROTOCOLS[0])[0]['full_resume'])
+        for protocol in PROTOCOLS:
+            full=phases('F',protocol)[1]
+            for arm,expected in [('TC-neither',(False,False)),('TC-Tonly',(True,False)),('TC-Conly',(False,True))]:
+                p=phases(arm,protocol)[0]
+                self.assertEqual((p['temporal'],p['classes']),expected)
+                for key in ('steps','horizon','lr','warmup_steps','floor','exponent','strength','parent_step','contrastive'):
+                    self.assertEqual(p[key],full[key],(protocol,arm,key))
+            self.assertFalse(phases('S-UA-restart',protocol)[0]['full_resume'])
+            self.assertTrue(phases('S-UA-continuous',protocol)[0]['full_resume'])
 
     def test_quality_perfect_reverse_ties_and_empty_classes(self):
         perfect=quality([.9,.8,.2,.1],[1,1,0,0])
@@ -329,35 +330,37 @@ class Experiments(unittest.TestCase):
                 DatasetCatalog.DATASET_DIR=previous_dir
 
     def test_paper_stage_a_anchor_seeds_snapshot_and_warm_banks(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder)
-            fake_ckpt=root/'remask_model_iter024999.pth'
-            fake_ckpt.write_bytes(b'paper-stage-a-mock-checkpoint')
-            fake_sha=digest(fake_ckpt)
-            orig_spec=copy.deepcopy(PAPER_STAGE_A_CHECKPOINTS[PROTOCOLS[0]])
-            old_env=os.environ.get('REMASK_PAPER_STAGE_A_CKPT')
-            try:
-                PAPER_STAGE_A_CHECKPOINTS[PROTOCOLS[0]]['sha256']=fake_sha
-                os.environ['REMASK_PAPER_STAGE_A_CKPT']=str(fake_ckpt)
-                phase_a=root/'full_outputs'/PROTOCOLS[0]/'seed1/F/A'
-                sig=dict(protocol=PROTOCOLS[0],arm='F',phase=phases('F',PROTOCOLS[0],1,False)[0],diagnostic=False)
-                seeded=ensure_paper_stage_a_anchor(PROTOCOLS[0],phase_a,sig,repo=REPO,mark_complete=True)
-                self.assertTrue(seeded)
-                self.assertTrue((phase_a/'complete.json').is_file())
-                self.assertTrue((phase_a/'CURRENT.json').is_file())
-                pointer,ckpt_path,bank_dir=verified_pointer(phase_a,'snapshots/025000.json')
-                self.assertEqual(pointer['sha256'],fake_sha)
-                self.assertEqual(ckpt_path.name,'remask_model_iter024999.pth')
-                self.assertEqual(pointer['banks_sha256'],WARM_BANKS[PROTOCOLS[0]]['banks_sha256'])
-                self.assertTrue((bank_dir/'CTR.p').is_file())
-                self.assertTrue((bank_dir/'CTR_O.p').is_file())
-            finally:
-                PAPER_STAGE_A_CHECKPOINTS[PROTOCOLS[0]].clear()
-                PAPER_STAGE_A_CHECKPOINTS[PROTOCOLS[0]].update(orig_spec)
-                if old_env is None:
-                    os.environ.pop('REMASK_PAPER_STAGE_A_CKPT',None)
-                else:
-                    os.environ['REMASK_PAPER_STAGE_A_CKPT']=old_env
+        for protocol in PROTOCOLS:
+            with tempfile.TemporaryDirectory() as folder:
+                root=Path(folder)
+                spec=PAPER_STAGE_A_CHECKPOINTS[protocol]
+                fake_ckpt=root/spec['filename']
+                fake_ckpt.write_bytes(f'paper-stage-a-mock-checkpoint-{protocol}'.encode())
+                fake_sha=digest(fake_ckpt)
+                orig_spec=copy.deepcopy(spec)
+                old_env=os.environ.get('REMASK_PAPER_STAGE_A_CKPT')
+                try:
+                    PAPER_STAGE_A_CHECKPOINTS[protocol]['sha256']=fake_sha
+                    os.environ['REMASK_PAPER_STAGE_A_CKPT']=str(fake_ckpt)
+                    phase_a=root/'full_outputs'/protocol/'seed1/F/A'
+                    sig=dict(protocol=protocol,arm='F',phase=phases('F',protocol,1,False)[0],diagnostic=False)
+                    seeded=ensure_paper_stage_a_anchor(protocol,phase_a,sig,repo=REPO,mark_complete=True)
+                    self.assertTrue(seeded)
+                    self.assertTrue((phase_a/'complete.json').is_file())
+                    self.assertTrue((phase_a/'CURRENT.json').is_file())
+                    pointer,ckpt_path,bank_dir=verified_pointer(phase_a,'snapshots/025000.json')
+                    self.assertEqual(pointer['sha256'],fake_sha)
+                    self.assertEqual(ckpt_path.name,spec['filename'])
+                    self.assertEqual(pointer['banks_sha256'],WARM_BANKS[protocol]['banks_sha256'])
+                    self.assertTrue((bank_dir/'CTR.p').is_file())
+                    self.assertTrue((bank_dir/'CTR_O.p').is_file())
+                finally:
+                    PAPER_STAGE_A_CHECKPOINTS[protocol].clear()
+                    PAPER_STAGE_A_CHECKPOINTS[protocol].update(orig_spec)
+                    if old_env is None:
+                        os.environ.pop('REMASK_PAPER_STAGE_A_CKPT',None)
+                    else:
+                        os.environ['REMASK_PAPER_STAGE_A_CKPT']=old_env
 
 
 if __name__=='__main__':unittest.main()

@@ -56,6 +56,8 @@ def phases(arm, protocol, seed=1, smoke=False):
              offset=switch, lr=1e-4, warmup_steps=1 if smoke else 4000,
              contrastive=0., reliability='ua' if recipe.get('late_ua') else 'tc',
              parent=recipe.get('parent', arm), parent_step=switch, full_resume=False)
+    if not is_uiis:
+        b.update(floor=.6, exponent=1., strength=.35)
     if recipe.get('only_a') or (not is_uiis and arm.startswith('G-')):
         return [a]
     return [b] if recipe.get('parent') else [a, b]

@@ -194,10 +194,9 @@ def main():
     with local_lock(args.output):
         for row in plan:
             protocol,arm=row['protocol'],row['arm']
-            strength=row['phases'][0]['strength']
-            calib=calibration(args.output/'calibration'/f'{protocol}.json',data,data_sha,strength,
-                              trainer._underwater_reliability_perturb,args.smoke)
             for p in row['phases']:
+                calib=calibration(args.output/'calibration'/f'{protocol}_{p["strength"]:.2f}.json',data,data_sha,p['strength'],
+                                  trainer._underwater_reliability_perturb,args.smoke)
                 if not phase_run(args,arm,protocol,p,records[protocol],data,data_sha,code_sha,calib,deadline):
                     print('SESSION_PAUSED: repeat the same command/output to continue the declared queue.',flush=True);return
         print('SUITE_COMPLETE: every requested phase has a committed completion record.',flush=True)

@@ -44,6 +44,13 @@ PAPER_STAGE_A_CHECKPOINTS = {
         'gdrive_id': '1as2OJ5h8GN2zbjdMl6QSn7aY39RQ7E6p',
         'historical_origin': 'results_sensitivity/remask_special_uwrg_sensitivity_24283/uiis_to_suim/strength020/remask_model_iter024999.pth',
     },
+    'usis10k_to_suim': {
+        'filename': 'usis10k_remask_model_iter028999.pth',
+        'sha256': '507851f84050fc34ee8f77ec3ad046c462d26573800f73b1fc8bf3be3e6ebebf',
+        'step': 25000,
+        'gdrive_id': '1iwmKXx463Xh6-zN8TDL36h8RFHieM-C7',
+        'historical_origin': 'results_sensitivity/remask_special_uwrg_sensitivity_24281/usis10k_bg_to_suim/floor060/remask_model_iter028999.pth',
+    },
 }
 
 
