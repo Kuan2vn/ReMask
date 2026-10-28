@@ -119,8 +119,9 @@ def main():
                                 traced(f'import immutable {parent}/A@{recipe["parent_step"]}', import_anchor)(
                                     source, snapshot.parent.parent, recipe['parent_step'], protocol, seed, mode=='smoke')
                     if not snapshot.exists() and parent == 'F' and recipe['parent_step'] == 25000 and mode != 'smoke':
-                        if paper_stage_a_checkpoint(protocol, repo=args.repo) is not None:
-                            print(f'[PAPER STAGE-A READY] Will seed {protocol}/F/A@25000 from remask_model_iter024999.pth', flush=True)
+                        ckpt_path = paper_stage_a_checkpoint(protocol, repo=args.repo)
+                        if ckpt_path is not None:
+                            print(f'[PAPER STAGE-A READY] Will seed {protocol}/F/A@25000 from {ckpt_path.name}', flush=True)
                             continue
                     if not snapshot.exists():
                         missing.append(snapshot)
